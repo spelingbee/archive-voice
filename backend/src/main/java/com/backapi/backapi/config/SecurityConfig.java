@@ -29,10 +29,14 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
 
+    // НЕ инжектим фильтр в поле, а передаём его как параметр в метод
     private static final String[] WHITE_LIST = {
             "/api/auth/**",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
+            "/webjars/**"
     };
 
     @Bean

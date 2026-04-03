@@ -1,7 +1,6 @@
 package com.backapi.backapi.service;
 
 import com.backapi.backapi.dto.request.LoginRequest;
-import com.backapi.backapi.dto.request.RefreshTokenRequest;
 import com.backapi.backapi.dto.request.RegisterRequest;
 import com.backapi.backapi.dto.response.AuthResponse;
 import com.backapi.backapi.entity.RefreshToken;
@@ -11,7 +10,9 @@ import com.backapi.backapi.exception.EmailAlreadyExistsException;
 import com.backapi.backapi.repository.RefreshTokenRepository;
 import com.backapi.backapi.repository.UserRepository;
 import com.backapi.backapi.security.JwtService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -73,20 +75,28 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.getRefreshToken())
+    @Transactional
+    public AuthResponse refreshToken(String refreshToken) {
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
         refreshTokenService.verifyExpiration(refreshTokenEntity);
 
         User user = refreshTokenEntity.getUser();
+
         String newAccessToken = jwtService.generateToken(user);
-        String newRefreshToken = refreshTokenService.createRefreshToken(user).getToken();
+        RefreshToken newRefreshTokenEntity = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
+                .refreshToken(newRefreshTokenEntity.getToken())
                 .user(userService.toResponse(user))
                 .build();
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepository.findByToken(refreshToken)
+                .ifPresent(refreshTokenRepository::delete);
     }
 }

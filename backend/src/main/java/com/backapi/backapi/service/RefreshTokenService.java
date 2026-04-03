@@ -6,6 +6,7 @@ import com.backapi.backapi.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,19 +20,29 @@ public class RefreshTokenService {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
+    /**
+     * Создаёт новый Refresh Token для пользователя.
+     * Сначала удаляет все предыдущие токены этого пользователя.
+     */
+    @Transactional
     public RefreshToken createRefreshToken(User user) {
-        // Удаляем старый refresh токен пользователя
+        // Удаляем ВСЕ старые refresh-токены этого пользователя
         refreshTokenRepository.deleteByUser(user);
 
-        RefreshToken refreshToken = RefreshToken.builder()
+        // Создаём новый токен
+        RefreshToken newToken = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
                 .expiryDate(Instant.now().plusMillis(refreshExpiration))
                 .build();
 
-        return refreshTokenRepository.save(refreshToken);
+        return refreshTokenRepository.save(newToken);
     }
 
+    /**
+     * Проверяет, не истёк ли токен. Если истёк — удаляет его.
+     */
+    @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
@@ -39,4 +50,6 @@ public class RefreshTokenService {
         }
         return token;
     }
+
+
 }
