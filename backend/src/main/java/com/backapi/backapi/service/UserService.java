@@ -3,6 +3,7 @@ package com.backapi.backapi.service;
 
 import com.backapi.backapi.dto.response.UserResponse;
 import com.backapi.backapi.entity.User;
+import com.backapi.backapi.exception.ResourceNotFoundException;
 import com.backapi.backapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;

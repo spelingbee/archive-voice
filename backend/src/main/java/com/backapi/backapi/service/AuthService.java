@@ -1,10 +1,14 @@
 package com.backapi.backapi.service;
 
 import com.backapi.backapi.dto.request.LoginRequest;
+import com.backapi.backapi.dto.request.RefreshTokenRequest;
 import com.backapi.backapi.dto.request.RegisterRequest;
 import com.backapi.backapi.dto.response.AuthResponse;
+import com.backapi.backapi.entity.RefreshToken;
 import com.backapi.backapi.entity.User;
 import com.backapi.backapi.enums.Role;
+import com.backapi.backapi.exception.EmailAlreadyExistsException;
+import com.backapi.backapi.repository.RefreshTokenRepository;
 import com.backapi.backapi.repository.UserRepository;
 import com.backapi.backapi.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +25,10 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
     private final UserService userService;
+    private final RefreshTokenRepository refreshTokenRepository;
+
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -38,17 +45,17 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
+        RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
-                .token(token)
-                .type("Bearer")
+                .accessToken(accessToken)
+                .refreshToken(refreshTokenEntity.getToken())
                 .user(userService.toResponse(user))
                 .build();
     }
 
     public AuthResponse login(LoginRequest request) {
-        // Бросит BadCredentialsException если неверные данные
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -56,11 +63,29 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow();
 
-        String token = jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
+        RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
-                .token(token)
-                .type("Bearer")
+                .accessToken(accessToken)
+                .refreshToken(refreshTokenEntity.getToken())
+                .user(userService.toResponse(user))
+                .build();
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+        refreshTokenService.verifyExpiration(refreshTokenEntity);
+
+        User user = refreshTokenEntity.getUser();
+        String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = refreshTokenService.createRefreshToken(user).getToken();
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .user(userService.toResponse(user))
                 .build();
     }
