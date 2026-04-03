@@ -1,14 +1,10 @@
 package com.backapi.backapi.entity;
 
+import com.backapi.backapi.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.Collection;
-import java.util.List;
-
-package com.example.app.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -18,6 +14,8 @@ import lombok.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
