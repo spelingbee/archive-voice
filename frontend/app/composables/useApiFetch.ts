@@ -1,94 +1,114 @@
 /**
  * composables/useApiFetch.ts
  * Базовый API-клиент для всего приложения.
- *
- * Оборачивает нативный Nuxt `useFetch` / `$fetch` с:
- * 1. Автоподмешиванием JWT токена (Bearer) из куки `auth_token`
- * 2. Автоматическим baseURL из runtimeConfig
- * 3. Перехватом 401 → редирект на /auth и очисткой токена
- * 4. Единообразной обработкой ошибок
- *
- * Использование:
- *   const { data, error } = await useApiFetch<Person[]>('/archive/persons')
- *   const result = await $apiFetch<Person>('/archive/persons/1')
  */
 
 import type { UseFetchOptions } from 'nuxt/app'
+import { ofetch } from 'ofetch'
 
 /**
  * SSR-совместимый composable для GET-запросов с кешированием.
- * Обёртка над useFetch с JWT и обработкой ошибок.
  */
 export function useApiFetch<T>(
   url: string | (() => string),
   options: UseFetchOptions<T> = {},
 ) {
   const config = useRuntimeConfig()
-  const token = useCookie('auth_token')
+  const auth = useAuth()
 
   return useFetch(url, {
-    // Базовый URL из runtimeConfig (по умолчанию /api проксируется через Nuxt)
     baseURL: config.public.apiBase as string,
+    credentials: 'include',
 
-    // --- Interceptors (аналог axios interceptors) ---
-
+    // --- Инцептор запроса ---
     onRequest({ options: reqOptions }) {
-      // Подмешиваем JWT Bearer токен, если он есть в куке
-      if (token.value) {
-        const headers = new Headers(reqOptions.headers)
-        headers.set('Authorization', `Bearer ${token.value}`)
+      const token = auth.token.value
+      if (token) {
+        const headers = (reqOptions.headers || {}) as any
+        if (headers instanceof Headers) {
+          headers.set('Authorization', `Bearer ${token}`)
+        } else if (Array.isArray(headers)) {
+          headers.push(['Authorization', `Bearer ${token}`])
+        } else {
+          headers.Authorization = `Bearer ${token}`
+        }
         reqOptions.headers = headers
       }
     },
 
-    onResponseError({ response }) {
-      // 401 Unauthorized → сброс токена и редирект на страницу авторизации
+    // --- Автоматическая распаковка { data: T } ---
+    transform: (res: any) => res.data ?? res,
+
+    // --- Обработка 401 — просим useAuth обновиться ---
+    async onResponseError({ response }) {
       if (response.status === 401) {
-        token.value = null
-        navigateTo('/auth')
+        const urlStr = typeof url === 'function' ? url() : url
+        const isAuthRoute = urlStr.includes('/auth/login') || urlStr.includes('/auth/register') || urlStr.includes('/auth/refresh')
+        
+        if (!isAuthRoute && import.meta.client) {
+          try {
+            await auth.refresh()
+          } catch {
+            auth.logout()
+          }
+        }
       }
     },
 
-    // Позволяем переопределять любые опции
     ...options,
   })
 }
 
 /**
  * Императивный клиент для мутаций (POST, PUT, DELETE).
- * НЕ использует SSR-кеширование — вызывается только на клиенте.
- *
- * Использование:
- *   const person = await $apiFetch<Person>('/archive/persons', {
- *     method: 'POST',
- *     body: { fullName: '...' }
- *   })
  */
-export function $apiFetch<T>(
+export async function $apiFetch<T>(
   url: string,
-  options: Parameters<typeof $fetch>[1] = {},
+  options: any = {},
 ): Promise<T> {
   const config = useRuntimeConfig()
-  const token = useCookie('auth_token')
+  const auth = useAuth()
 
-  return $fetch<T>(url, {
+  // Вспомогательная функция для системной распаковки { data: T } -> T
+  const extractData = (res: any) => res?.data ?? res
+
+  const fetchOptions = {
     baseURL: config.public.apiBase as string,
-
-    onRequest({ options: reqOptions }) {
-      if (token.value) {
-        const headers = new Headers(reqOptions.headers)
-        headers.set('Authorization', `Bearer ${token.value}`)
-        reqOptions.headers = headers
-      }
-    },
-
-    onResponseError({ response }) {
-      if (response.status === 401) {
-        token.value = null
-        navigateTo('/auth')
-      }
-    },
-
+    credentials: 'include' as const,
     ...options,
-  })
+    headers: {
+      ...options.headers,
+      ...(auth.token.value ? { Authorization: `Bearer ${auth.token.value}` } : {}),
+    },
+  }
+
+  try {
+    const response = await ofetch(url, fetchOptions)
+    return extractData(response) as T
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')
+      
+      if (!isAuthRoute && import.meta.client) {
+        try {
+          await auth.refresh()
+          
+          const freshToken = auth.token.value
+          const retryResponse = await ofetch(url, {
+            ...fetchOptions,
+            headers: {
+              ...fetchOptions.headers,
+              Authorization: `Bearer ${freshToken}`,
+            },
+          })
+          
+          return extractData(retryResponse) as T
+        } catch (refreshErr) {
+          auth.logout()
+          throw refreshErr
+        }
+      }
+    }
+    throw err
+  }
 }

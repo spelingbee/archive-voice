@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   // Переопределяются через .env: NUXT_PUBLIC_API_BASE=https://api.example.com
   runtimeConfig: {
     public: {
-      apiBase: "http://localhost:8080/api",
+      apiBase: "https://jolie-causable-chloe.ngrok-free.dev/api",
     },
   },
 

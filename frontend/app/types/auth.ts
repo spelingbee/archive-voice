@@ -7,12 +7,14 @@
 /** Роли пользователя в системе */
 export type UserRole = 'ADMIN' | 'MODERATOR' | 'RESEARCHER' | 'USER'
 
-/** Профиль авторизованного пользователя */
+/** Профиль авторизованного пользователя (согласно ответу бэкенда) */
 export interface AuthUser {
   id: number
   email: string
-  fullName: string
+  firstName: string
+  lastName: string
   role: UserRole
+  createdAt?: string
 }
 
 /** Данные для входа */
@@ -25,11 +27,18 @@ export interface LoginCredentials {
 export interface RegisterPayload {
   email: string
   password: string
-  fullName: string
+  firstName: string
+  lastName: string
 }
 
-/** Ответ на успешную аутентификацию */
+/** 
+ * Ответ на успешную аутентификацию (Login / Register / Refresh).
+ * Примечание: Глобальный интерцептор useApiFetch автоматически распаковывает 
+ * поле { data: T } -> T, поэтому здесь описываем внутреннюю структуру.
+ */
 export interface AuthResponse {
-  token: string
+  accessToken: string
+  refreshToken: string | null
+  type: string | null
   user: AuthUser
 }

@@ -14,7 +14,7 @@ const route = useRoute()
 const personId = computed(() => Number(route.params.id))
 
 // --- Загрузка данных ---
-const { data: person, status, error } = archiveRepository.getById(personId.value)
+const { data: person, status, error } = archiveRepository.getById(personId)
 
 const isLoading = computed(() => status.value === 'pending')
 

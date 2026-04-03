@@ -4,7 +4,7 @@
  * Глобальный хедер приложения.
  * Отвечает за навигацию, кнопки действий и авторизацию.
  */
-const { isAuthenticated, user, isModerator, logout } = useAuth()
+const { isAuthenticated, user, isModerator, fullName, logout } = useAuth()
 
 const emit = defineEmits<{
   openChat: []
@@ -56,7 +56,7 @@ const emit = defineEmits<{
             to="/dashboard"
             class="hidden md:inline-flex items-center gap-2 text-sm text-ink-secondary hover:text-ink transition-colors"
           >
-            {{ user?.fullName }}
+            {{ fullName }}
             <!-- Бейдж роли -->
             <span
               v-if="isModerator"

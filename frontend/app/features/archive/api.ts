@@ -18,7 +18,7 @@ import type { Person, PersonId, PersonCreateDto, PersonFilters } from './types'
 
 import { MOCK_PERSONS, getMockPaginatedResponse } from './mocks'
 
-const BASE = '/archive/persons'
+const BASE = '/persons'
 
 export const archiveRepository = {
   /**

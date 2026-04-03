@@ -12,7 +12,7 @@ import type { ChatSession } from '~/features/chat/types'
 useHead({ title: 'Личный кабинет — Голос из архива' })
 
 // --- Auth (вместо mock) ---
-const { user, isAuthenticated, isModerator, isAdmin, logout } = useAuth()
+const { user, isAuthenticated, isModerator, isAdmin, fullName, logout } = useAuth()
 
 // Редирект на /auth если не авторизован
 watch(isAuthenticated, (val) => {
@@ -258,7 +258,11 @@ const roleLabel = computed(() => {
               <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt class="text-ink-muted mb-1">Имя</dt>
-                  <dd class="text-ink">{{ user?.fullName }}</dd>
+                  <dd class="text-ink">{{ user?.firstName }}</dd>
+                </div>
+                <div>
+                  <dt class="text-ink-muted mb-1">Фамилия</dt>
+                  <dd class="text-ink">{{ user?.lastName }}</dd>
                 </div>
                 <div>
                   <dt class="text-ink-muted mb-1">Email</dt>

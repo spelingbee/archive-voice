@@ -30,7 +30,8 @@ const loginForm = ref({
 
 // --- Register form ---
 const registerForm = ref({
-  fullName: '',
+  firstName: '',
+  lastName: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -77,7 +78,8 @@ async function handleRegister() {
 
   try {
     await register({
-      fullName: registerForm.value.fullName,
+      firstName: registerForm.value.firstName,
+      lastName: registerForm.value.lastName,
       email: registerForm.value.email,
       password: registerForm.value.password,
     })
@@ -212,15 +214,30 @@ function switchTab(tab: AuthTab) {
       >
         <div>
           <label for="reg-name" class="block text-sm text-ink-secondary mb-2">
-            Полное имя
+            Имя
           </label>
           <input
             id="reg-name"
-            v-model="registerForm.fullName"
+            v-model="registerForm.firstName"
             type="text"
             required
             autocomplete="name"
-            placeholder="Иванов Иван Иванович"
+            placeholder="Иван"
+            class="w-full bg-transparent border-0 border-b border-border-hover py-2.5 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
+          />
+        </div>
+
+        <div>
+          <label for="reg-name" class="block text-sm text-ink-secondary mb-2">
+            Фамилия
+          </label>
+          <input
+            id="reg-name"
+            v-model="registerForm.lastName"
+            type="text"
+            required
+            autocomplete="name"
+            placeholder="Иванов"
             class="w-full bg-transparent border-0 border-b border-border-hover py-2.5 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
           />
         </div>

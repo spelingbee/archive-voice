@@ -2,35 +2,35 @@
  * features/auth/composables/useAuth.ts
  * Composable авторизации — единый источник правды о текущем пользователе.
  *
- * Использует useState (SSR-safe глобальный стейт) для хранения пользователя.
- * Предоставляет:
- *  - Реактивные computed-свойства: isAuthenticated, isAdmin, isModerator
- *  - Методы: login(), logout(), fetchCurrentUser()
- *
- * Использование:
- *   const { user, isAdmin, login, logout } = useAuth()
+ * Особенности:
+ * - Ротируемый accessToken в куки `auth_token`
+ * - Изолированный для каждого запроса Token Refresh (SSR-safe)
+ * - Реактивные имена (firstName, lastName, fullName)
  */
 
 import type { AuthUser, LoginCredentials, RegisterPayload, AuthResponse } from '~/types'
 
 export function useAuth() {
+  const nuxtApp = useNuxtApp()
+  
   // --- State ---
-  // useState обеспечивает SSR-гидратацию и глобальный синглтон
   const user = useState<AuthUser | null>('auth:user', () => null)
   const token = useCookie('auth_token', {
     maxAge: 60 * 60 * 24 * 7, // 7 дней
     sameSite: 'lax',
   })
 
-  // --- Computed (роли) ---
+  // --- Computed (имена и роли) ---
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
-  const isModerator = computed(
-    () => user.value?.role === 'MODERATOR' || isAdmin.value,
-  )
-  const isResearcher = computed(
-    () => user.value?.role === 'RESEARCHER' || isModerator.value,
-  )
+  const isModerator = computed(() => user.value?.role === 'MODERATOR' || isAdmin.value)
+  const isResearcher = computed(() => user.value?.role === 'RESEARCHER' || isModerator.value)
+
+  /** Полное имя пользователя для UI */
+  const fullName = computed(() => {
+    if (!user.value) return ''
+    return `${user.value.firstName} ${user.value.lastName}`.trim()
+  })
 
   // --- Actions ---
 
@@ -41,8 +41,7 @@ export function useAuth() {
       body: credentials,
     })
 
-    // Сохраняем токен в куку (автоматически будет подхвачен useApiFetch)
-    token.value = response.token
+    token.value = response.accessToken
     user.value = response.user
   }
 
@@ -53,45 +52,85 @@ export function useAuth() {
       body: payload,
     })
 
-    token.value = response.token
+    token.value = response.accessToken
     user.value = response.user
   }
 
-  /** Выход: очистка стейта и куки */
+  /**
+   * Обновление токена: POST /auth/refresh
+   * Использует httpOnly cookie на бэкенде.
+   */
+  async function refresh(): Promise<void> {
+    // Рефреш должен происходить только на клиенте, так как httpOnly куки 
+    // управляются браузером и могут быть недоступны/неприменимы при SSR.
+    if (!import.meta.client) return
+    
+    if ((nuxtApp as any)._authRefreshPromise) {
+       return (nuxtApp as any)._authRefreshPromise
+    }
+
+    const refreshTask = (async () => {
+      try {
+        const response = await $apiFetch<AuthResponse>('/auth/refresh', {
+          method: 'POST',
+        })
+        token.value = response.accessToken
+        user.value = response.user
+      } catch (err) {
+        // На сервере навигация выбрасывает исключение, которое лучше не глотать полностью
+        logout()
+        throw err
+      } finally {
+        (nuxtApp as any)._authRefreshPromise = null
+      }
+    })()
+
+    ;(nuxtApp as any)._authRefreshPromise = refreshTask
+    return refreshTask
+  }
+
+  /** Выход из системы */
   function logout(): void {
     user.value = null
     token.value = null
-    navigateTo('/auth')
+    
+    // Делаем редирект на клиентской стороне или позволяем Nuxt обработать его на сервере
+    if (import.meta.client || import.meta.server) {
+       navigateTo('/auth')
+    }
   }
 
-  /** Получить профиль текущего пользователя (при инициализации приложения) */
+  /** Инициализация пользователя (при загрузке страницы) */
   async function fetchCurrentUser(): Promise<void> {
     if (!token.value) return
 
     try {
-      const response = await $apiFetch<AuthUser>('/auth/me')
-      user.value = response
-    } catch {
-      // Токен невалиден — сбрасываем
-      token.value = null
-      user.value = null
+      // Глобальная распаковка { data: T } через useApiFetch теперь 
+      // работает корректно и для первичных, и для повторных (retry) запросов.
+      const response = await $apiFetch<any>('/auth/me')
+      user.value = response.user || response
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          await refresh()
+        } catch {
+          logout()
+        }
+      }
     }
   }
 
   return {
-    // State
     user: readonly(user),
     token: readonly(token),
-
-    // Computed
     isAuthenticated,
     isAdmin,
     isModerator,
     isResearcher,
-
-    // Actions
+    fullName,
     login,
     register,
+    refresh,
     logout,
     fetchCurrentUser,
   }
