@@ -2,7 +2,10 @@ package com.backapi.backapi.controller;
 
 import com.backapi.backapi.dto.request.LoginRequest;
 import com.backapi.backapi.dto.request.RegisterRequest;
+import com.backapi.backapi.dto.response.ApiResponseWrapper;
 import com.backapi.backapi.dto.response.AuthResponse;
+import com.backapi.backapi.dto.response.UserResponse;
+import com.backapi.backapi.entity.User;
 import com.backapi.backapi.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,8 +14,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -27,45 +33,44 @@ public class AuthController {
     private final AuthService authService;
 
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // только HTTPS в продакшене
-        cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
-        cookie.setAttribute("SameSite", "Strict");
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true) // Обязательно для SameSite=None
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("None") // Меняем Strict на None для работы localhost + ngrok
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(
+    public ResponseEntity<ApiResponseWrapper<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletResponse response) {
 
         AuthResponse auth = authService.register(request);
         addRefreshTokenCookie(response, auth.getRefreshToken());
-        auth.setRefreshToken(null); // не возвращаем в JSON
-        return ResponseEntity.ok(auth);
+        auth.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponseWrapper.of(auth, "Регистрация успешна"));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(
+    public ResponseEntity<ApiResponseWrapper<AuthResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
 
         AuthResponse auth = authService.login(request);
         addRefreshTokenCookie(response, auth.getRefreshToken());
         auth.setRefreshToken(null);
-        return ResponseEntity.ok(auth);
+        return ResponseEntity.ok(ApiResponseWrapper.of(auth));
     }
 
-    // ─── НОВЫЙ ВАРИАНТ /refresh ─────────────────────────────────────
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(
+    public ResponseEntity<ApiResponseWrapper<AuthResponse>> refresh(
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        // FIX: читаем куку вручную — @CookieValue падает с 400 если куки нет,
-        // а нам нужен нормальный 401 в таком случае.
         String refreshToken = null;
         if (request.getCookies() != null) {
             refreshToken = Arrays.stream(request.getCookies())
@@ -84,7 +89,7 @@ public class AuthController {
             AuthResponse auth = authService.refreshToken(refreshToken);
             addRefreshTokenCookie(response, auth.getRefreshToken());
             auth.setRefreshToken(null);
-            return ResponseEntity.ok(auth);
+            return ResponseEntity.ok(ApiResponseWrapper.of(auth));
         } catch (Exception e) {
             log.error("Ошибка при обновлении токена: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -96,7 +101,6 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        // Читаем refresh token из куки и отзываем его
         if (request.getCookies() != null) {
             Arrays.stream(request.getCookies())
                     .filter(c -> "refreshToken".equals(c.getName()))
@@ -105,7 +109,6 @@ public class AuthController {
                     .ifPresent(authService::logout);
         }
 
-        // Очищаем куку
         Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
         cookie.setPath("/");
@@ -113,5 +116,22 @@ public class AuthController {
         response.addCookie(cookie);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponseWrapper<UserResponse>> me() {
+        User user = (User) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        UserResponse userResponse = UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .createdAt(user.getCreatedAt())
+                .build();
+
+        return ResponseEntity.ok(ApiResponseWrapper.of(userResponse));
     }
 }

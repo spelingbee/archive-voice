@@ -1,9 +1,8 @@
 package com.backapi.backapi.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+
+import com.backapi.backapi.enums.PersonStatus;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +10,9 @@ import lombok.NoArgsConstructor;
 import org.antlr.v4.runtime.misc.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -51,4 +53,29 @@ public class Person {
     private String source;        // source (архивные данные)
 
     private String status;        // status (verified/unverified)
+
+    // ─── Документы ──────────────────────────────────────────────────
+    @OneToMany(mappedBy = "person", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Document> documents = new ArrayList<>();
+
+    // ─── Модерация ──────────────────────────────────────────────────
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PersonStatus moderationStatus = PersonStatus.PENDING;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User moderatedBy;
+
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    private String rejectionReason;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

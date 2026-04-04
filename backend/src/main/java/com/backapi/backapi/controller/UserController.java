@@ -1,5 +1,6 @@
 package com.backapi.backapi.controller;
 
+import com.backapi.backapi.dto.response.ApiResponseWrapper;
 import com.backapi.backapi.dto.response.UserResponse;
 import com.backapi.backapi.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -16,27 +17,23 @@ public class UserController {
 
     private final UserService userService;
 
-    // Текущий авторизованный пользователь
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getMe() {
-        return ResponseEntity.ok(userService.getCurrentUser());
+    public ResponseEntity<ApiResponseWrapper<UserResponse>> getMe() {
+        return ResponseEntity.ok(ApiResponseWrapper.of(userService.getCurrentUser()));
     }
 
-    // Получить пользователя по ID (только MODERATOR)
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('MODERATOR')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    public ResponseEntity<ApiResponseWrapper<UserResponse>> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseWrapper.of(userService.getUserById(id)));
     }
 
-    // Все пользователи (только MODERATOR)
     @GetMapping
     @PreAuthorize("hasRole('MODERATOR')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<ApiResponseWrapper<List<UserResponse>>> getAllUsers() {
+        return ResponseEntity.ok(ApiResponseWrapper.of(userService.getAllUsers()));
     }
 
-    // Удалить пользователя (только MODERATOR)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('MODERATOR')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
@@ -44,4 +41,3 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 }
-

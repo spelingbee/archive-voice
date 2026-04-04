@@ -1,5 +1,6 @@
 package com.backapi.backapi.exception;
 
+import com.backapi.backapi.dto.response.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -8,54 +9,62 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     // Ошибки валидации (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
-            errors.put(field, error.getDefaultMessage());
-        });
-        return buildResponse(HttpStatus.BAD_REQUEST, "Ошибка валидации", errors);
+    public ResponseEntity<ApiErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, List<String>> details = ex.getBindingResult().getAllErrors().stream()
+                .filter(e -> e instanceof FieldError)
+                .map(e -> (FieldError) e)
+                .collect(Collectors.groupingBy(
+                        FieldError::getField,
+                        Collectors.mapping(FieldError::getDefaultMessage, Collectors.toList())
+                ));
+
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .message("Ошибка валидации")
+                .details(details)
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     // Не найдено
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+    public ResponseEntity<ApiErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     // Email занят
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleEmailExists(EmailAlreadyExistsException ex) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), null);
+    public ResponseEntity<ApiErrorResponse> handleEmailExists(EmailAlreadyExistsException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     // Неверный логин/пароль
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Неверный email или пароль", null);
+    public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Неверный email или пароль");
     }
 
     // Всё остальное
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера", null);
+    public ResponseEntity<ApiErrorResponse> handleGeneral(Exception ex) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера");
     }
 
-    private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message, Object details) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", status.value());
-        body.put("message", message);
-        if (details != null) body.put("errors", details);
-        return ResponseEntity.status(status).body(body);
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(HttpStatus status, String message) {
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .statusCode(status.value())
+                .message(message)
+                .build();
+        return ResponseEntity.status(status).body(error);
     }
 }
