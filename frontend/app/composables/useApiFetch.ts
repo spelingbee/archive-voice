@@ -39,13 +39,20 @@ export function useApiFetch<T>(
     // --- Автоматическая распаковка { data: T } ---
     transform: (res: any) => res.data ?? res,
 
+    // --- Перезагрузка при обновлении токена ---
+    watch: [auth.token],
+
     // --- Обработка 401 — просим useAuth обновиться ---
     async onResponseError({ response }) {
       if (response.status === 401) {
         const urlStr = typeof url === 'function' ? url() : url
-        const isAuthRoute = urlStr.includes('/auth/login') || urlStr.includes('/auth/register') || urlStr.includes('/auth/refresh')
+        const isAuthRoute = urlStr.includes('/auth/login') || urlStr.includes('/auth/register') || urlStr.includes('/auth/refresh') || urlStr.includes('/auth/logout')
         
-        if (!isAuthRoute && import.meta.client) {
+        // Дополнительная проверка на текущий роут, чтобы не рефрешить на странице логина
+        const currentRoute = useRoute().path
+        const isAuthPage = currentRoute.startsWith('/auth')
+        
+        if (!isAuthRoute && !isAuthPage && import.meta.client) {
           try {
             await auth.refresh()
           } catch {
@@ -87,9 +94,12 @@ export async function $apiFetch<T>(
     return extractData(response) as T
   } catch (err: any) {
     if (err.response?.status === 401) {
-      const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')
+      const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh') || url.includes('/auth/logout')
       
-      if (!isAuthRoute && import.meta.client) {
+      const currentRoute = useRoute().path
+      const isAuthPage = currentRoute.startsWith('/auth')
+      
+      if (!isAuthRoute && !isAuthPage && import.meta.client) {
         try {
           await auth.refresh()
           

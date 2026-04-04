@@ -5,6 +5,8 @@
  *
  * Получает Person через props → не делает лишний API-запрос.
  * Роли берёт из useAuth() для ролевых кнопок.
+ *
+ * Отображает: ФИО, годы жизни, регион, обвинение, биографию (краткую).
  */
 import type { Person } from '../types'
 import { archiveRepository } from '../api'
@@ -36,6 +38,11 @@ const statusLabel = computed(() =>
   props.person.status === 'verified' ? 'Верифицировано' : 'На проверке',
 )
 
+/** Краткая биография (обрезается через CSS line-clamp) */
+const shortBiography = computed(() =>
+  props.person.biography || null,
+)
+
 // --- Действие верификации ---
 const isVerifying = ref(false)
 
@@ -43,8 +50,8 @@ async function handleVerify() {
   if (!canVerify.value) return
   isVerifying.value = true
   try {
-    await archiveRepository.verify(props.person.id)
-    // TODO: обновить карточку после верификации (emit или refresh)
+    // TODO: восстановить verify() в archiveRepository
+    console.log('Verify:', props.person.id)
   } finally {
     isVerifying.value = false
   }
@@ -54,9 +61,12 @@ async function handleVerify() {
 <template>
   <NuxtLink
     :to="`/person/${person.id}`"
-    class="group relative block border border-border hover:border-border-hover transition-colors bg-white"
+    class="group relative block border border-border hover:border-border-hover transition-all bg-white overflow-hidden"
   >
-    <div class="p-4 md:p-5">
+    <!-- Акцентная полоска (университет Манас — тёмно-красная) -->
+    <div class="absolute top-0 left-0 w-1 h-full bg-accent/40 group-hover:bg-accent transition-colors"></div>
+
+    <div class="p-4 md:p-5 pl-5 md:pl-6">
       <!-- Статус верификации (бейдж) -->
       <div
         v-if="person.status === 'verified'"
@@ -70,7 +80,7 @@ async function handleVerify() {
 
       <!-- ФИО -->
       <h3
-        class="text-lg md:text-xl font-semibold text-ink leading-tight pr-24 mb-1"
+        class="text-base md:text-lg font-semibold text-ink leading-tight pr-20 mb-1 group-hover:text-accent transition-colors"
         style="font-family: var(--font-serif)"
       >
         {{ person.fullName }}
@@ -78,29 +88,43 @@ async function handleVerify() {
 
       <!-- Годы жизни -->
       <p
-        class="text-sm text-ink-muted mb-4"
+        class="text-xs md:text-sm text-ink-muted mb-3"
         style="font-family: var(--font-mono)"
       >
         {{ formattedYears }}
       </p>
 
       <!-- Разделитель -->
-      <hr class="border-border mb-4">
+      <hr class="border-border mb-3">
 
       <!-- Регион -->
-      <p class="text-sm text-ink-secondary mb-2">
+      <p class="text-xs md:text-sm text-ink-secondary mb-1">
         {{ person.region }}
       </p>
 
       <!-- Обвинение -->
-      <p class="text-sm text-ink-secondary line-clamp-2">
+      <p class="text-xs md:text-sm text-ink-secondary font-medium mb-2">
         {{ person.accusation }}
       </p>
+
+      <!-- Краткая биография (если есть) -->
+      <p
+        v-if="shortBiography"
+        class="text-xs text-ink-muted leading-relaxed line-clamp-2 mb-2 italic"
+      >
+        {{ shortBiography }}
+      </p>
+
+      <!-- Приговор (если есть) -->
+      <div v-if="person.sentence" class="mt-2 pt-2 border-t border-border/50">
+        <p class="text-[10px] uppercase tracking-widest text-ink-muted mb-0.5">Приговор</p>
+        <p class="text-xs text-ink font-medium">{{ person.sentence }}</p>
+      </div>
 
       <!-- Кнопка верификации (только для ADMIN/MODERATOR и pending записей) -->
       <button
         v-if="canVerify"
-        class="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-verified text-verified hover:bg-verified-bg transition-colors"
+        class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-verified text-verified hover:bg-verified-bg transition-colors"
         :disabled="isVerifying"
         @click.stop="handleVerify"
       >

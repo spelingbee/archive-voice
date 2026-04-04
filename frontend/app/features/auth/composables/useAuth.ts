@@ -69,6 +69,10 @@ export function useAuth() {
        return (nuxtApp as any)._authRefreshPromise
     }
 
+    // Если нет токена и мы не в процессе логина/регистрации, 
+    // вероятно, сессия была намеренно завершена.
+    if (!token.value) return
+
     const refreshTask = (async () => {
       try {
         const response = await $apiFetch<AuthResponse>('/auth/refresh', {
@@ -90,11 +94,20 @@ export function useAuth() {
   }
 
   /** Выход из системы */
-  function logout(): void {
+  async function logout(): Promise<void> {
+    // 1. Сначала очищаем локальное состояние (реактивно)
     user.value = null
     token.value = null
     
-    // Делаем редирект на клиентской стороне или позволяем Nuxt обработать его на сервере
+    // 2. Делаем запрос на бэкенд, чтобы он стер HTTP-only куки (refresh token)
+    try {
+      await $apiFetch('/auth/logout', { method: 'POST' })
+    } catch (err) {
+      // Игнорируем ошибки при логауте, т.к. локально мы уже «вышли»
+      console.warn('Backend logout failed or not implemented', err)
+    }
+
+    // 3. Редирект
     if (import.meta.client || import.meta.server) {
        navigateTo('/auth')
     }

@@ -102,7 +102,7 @@ function handleClose() {
     >
       <div
         v-if="open"
-        class="fixed inset-0 bg-ink/20 z-40"
+        class="fixed inset-0 bg-ink/20 z-50"
         aria-hidden="true"
         @click="handleClose"
       />
@@ -119,7 +119,7 @@ function handleClose() {
     >
       <aside
         v-if="open"
-        class="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white border-l border-border flex flex-col"
+        class="fixed top-14 bottom-0 right-0 z-[60] w-full max-w-lg bg-white border-l border-border flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="chat-title"
