@@ -8,6 +8,7 @@
  * — Упоминание КТМУ Манас
  * — Навигационные ссылки
  */
+const { t } = useI18n()
 </script>
 
 <template>
@@ -18,20 +19,20 @@
       <!-- Основная строка -->
       <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-ink-muted">
         <div class="text-center md:text-left space-y-1">
-          <p>© {{ new Date().getFullYear() }} Голос из архива. Проект сохранения исторической памяти.</p>
+          <p>{{ t('footer.copyright', { year: new Date().getFullYear() }) }}</p>
           <p class="text-[10px] uppercase tracking-widest text-accent font-medium">
-            Кыргызско-Турецкий университет «Манас» · Факультет компьютерных наук
+            {{ t('footer.university_full') }}
           </p>
         </div>
         <nav class="flex items-center gap-4 md:gap-6 text-xs md:text-sm">
           <NuxtLink to="/about" class="hover:text-accent transition-colors">
-            О проекте
+            {{ t('footer.about') }}
           </NuxtLink>
           <NuxtLink to="/contribute" class="hover:text-accent transition-colors">
-            Помочь проекту
+            {{ t('footer.contribute') }}
           </NuxtLink>
           <NuxtLink to="/contact" class="hover:text-accent transition-colors">
-            Контакты
+            {{ t('footer.contacts') }}
           </NuxtLink>
         </nav>
       </div>

@@ -13,6 +13,7 @@
 import { archiveRepository } from '~/features/archive/api'
 import type { ModerationPerson } from '~/features/archive/types'
 
+const { t, locale } = useI18n()
 const route = useRoute()
 const personId = computed(() => Number(route.params.id))
 
@@ -28,7 +29,7 @@ const isChronologyOpen = ref(true)
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   try {
-    return new Date(dateStr).toLocaleDateString('ru-RU', {
+    return new Date(dateStr).toLocaleDateString(locale.value === 'ru' ? 'ru-RU' : locale.value === 'ky' ? 'ky-KG' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -40,7 +41,63 @@ function formatDate(dateStr: string | null | undefined): string {
 
 // --- SEO ---
 useHead({
-  title: computed(() => person.value ? `${person.value.fullName} — Голос из архива` : 'Запись архива'),
+  title: computed(() => person.value ? `${person.value.fullName} — ${t('header.title')}` : t('dashboard.view_record')),
+})
+
+// --- Озвучка (TTS) ---
+const isSpeaking = ref(false)
+let currentAudio: HTMLAudioElement | null = null
+
+async function toggleSpeak() {
+  if (isSpeaking.value) {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio = null
+    }
+    isSpeaking.value = false
+    return
+  }
+
+  if (!person.value?.biography) return
+
+  isSpeaking.value = true
+
+  try {
+    // Запрашиваем аудио у нашего Nuxt-сервера (в формате Blob/Файла)
+    const audioBlob = await $fetch<Blob>('/api/tts', {
+      method: 'POST',
+      body: { text: person.value.biography },
+      responseType: 'blob' // Важно! Ожидаем бинарный файл, а не JSON
+    })
+
+    // Создаем временную ссылку на файл и проигрываем
+    const audioUrl = URL.createObjectURL(audioBlob)
+    currentAudio = new Audio(audioUrl)
+    
+    currentAudio.onended = () => {
+      isSpeaking.value = false
+      URL.revokeObjectURL(audioUrl)
+      currentAudio = null
+    }
+
+    currentAudio.onerror = () => {
+      isSpeaking.value = false
+      if (currentAudio) URL.revokeObjectURL(currentAudio.src)
+      currentAudio = null
+    }
+
+    await currentAudio.play()
+  } catch (error) {
+    console.error("Ошибка озвучки:", error)
+    isSpeaking.value = false
+  }
+}
+
+onUnmounted(() => {
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
+  }
 })
 </script>
 
@@ -55,18 +112,18 @@ useHead({
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-0.5 transition-transform">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        <span class="text-sm font-medium">Вернуться к списку</span>
+        <span class="text-sm font-medium">{{ t('archive.person.back_to_list') }}</span>
       </NuxtLink>
     </nav>
 
     <!-- Ошибки / Загрузка -->
     <div v-if="isLoading" class="py-24 text-center">
-      <p class="text-ink-muted animate-pulse font-serif italic text-lg">Извлечение материалов дела №{{ personId }}...</p>
+      <p class="text-ink-muted animate-pulse font-serif italic text-lg">{{ t('archive.person.extracting_materials', { id: personId }) }}</p>
     </div>
 
     <div v-else-if="error" class="py-24 text-center border border-dashed border-accent/30 bg-paper-dark">
-      <p class="text-accent mb-4 font-medium">Запись временно недоступна или не найдена в основном реестре.</p>
-      <NuxtLink to="/" class="text-ink underline decoration-dotted underline-offset-4">Вернуться в главный архив</NuxtLink>
+      <p class="text-accent mb-4 font-medium">{{ t('archive.person.not_found') }}</p>
+      <NuxtLink to="/" class="text-ink underline decoration-dotted underline-offset-4">{{ t('archive.person.return_to_archive') }}</NuxtLink>
     </div>
 
     <!-- Основной контент (Досье) -->
@@ -79,14 +136,14 @@ useHead({
           <div class="flex flex-col gap-4">
             <div class="space-y-3">
               <div class="flex items-center gap-3 flex-wrap">
-                <span class="text-[10px] uppercase tracking-[0.3em] px-2 py-1 bg-accent text-white">Архив</span>
+                <span class="text-[10px] uppercase tracking-[0.3em] px-2 py-1 bg-accent text-white">{{ t('archive.person.verified') }}</span>
                 <p class="text-[10px] uppercase tracking-[0.2em] text-ink-muted font-mono">
                   Дело №{{ person.id }}
                 </p>
                 <!-- Бейдж статуса: если запись публична — она верифицирована -->
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest border text-verified border-verified bg-verified-bg/30">
                   <span class="w-1.5 h-1.5 bg-verified rounded-full" />
-                  Верифицировано
+                  {{ t('archive.person.verified') }}
                 </span>
               </div>
               <h1
@@ -101,15 +158,25 @@ useHead({
 
         <!-- Биография -->
         <section>
-          <h2 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-6 md:mb-8 font-bold border-b border-border pb-1">
-            I. Биографическая справка
+          <h2 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-6 md:mb-8 font-bold border-b border-border pb-1 flex items-center justify-between">
+            <span>{{ t('archive.person.bio_summary') }}</span>
+            <button 
+              v-if="person.biography"
+              class="flex items-center gap-1.5 px-3 py-1 -mt-1 text-[10px] text-ink-muted hover:text-accent transition-colors border border-transparent hover:border-accent/20 group/speak"
+              :title="isSpeaking ? t('archive.person.stop_speaking') : t('archive.person.listen_bio')"
+              @click="toggleSpeak"
+            >
+              <svg v-if="!isSpeaking" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover/speak:scale-110 transition-transform"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <span class="font-bold tracking-widest uppercase">{{ isSpeaking ? t('common.stop') : t('common.speak') }}</span>
+            </button>
           </h2>
           <div class="prose prose-sm max-w-none text-ink leading-relaxed">
             <p v-if="person.biography" class="whitespace-pre-wrap text-base md:text-lg leading-loose font-serif italic text-ink-secondary">
               "{{ person.biography }}"
             </p>
             <p v-else class="text-ink-muted italic opacity-60">
-              Подробные биографические сведения находятся в процессе оцифровки из бумажных носителей.
+              {{ t('archive.person.bio_digitizing') }}
             </p>
           </div>
         </section>
@@ -117,28 +184,28 @@ useHead({
         <!-- Сведения о деле -->
         <section>
           <h2 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-6 md:mb-8 font-bold border-b border-border pb-1">
-            II. Сведения о деле
+            {{ t('archive.person.case_summary') }}
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-6 md:gap-y-8 bg-paper-dark/20 p-4 md:p-6 border border-border">
             <div>
-              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">Статья обвинения</dt>
-              <dd class="text-sm md:text-base text-ink font-medium">{{ person.charge || person.accusation || '—' }}</dd>
+              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">{{ t('archive.person.accusation_label') }}</dt>
+              <dd class="text-sm md:text-base text-ink font-medium">{{ t(person.charge || person.accusation || '—') }}</dd>
             </div>
             <div>
-              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">Архивный источник</dt>
+              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">{{ t('archive.person.source_label') }}</dt>
               <dd class="text-sm md:text-base text-ink font-serif italic">{{ person.source || 'ИЦ ГКНБ' }}</dd>
             </div>
             <div>
-              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">Место жительства</dt>
-              <dd class="text-sm md:text-base text-ink">{{ person.region }}{{ person.district ? `, ${person.district}` : '' }}</dd>
+              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">{{ t('archive.person.residence') }}</dt>
+              <dd class="text-sm md:text-base text-ink">{{ t(person.region) }}{{ person.district ? `, ${person.district}` : '' }}</dd>
             </div>
             <div>
-              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">Род занятий</dt>
-              <dd class="text-sm md:text-base text-ink">{{ person.occupation || 'Сведения отсутствуют' }}</dd>
+              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">{{ t('archive.person.occupation_label') }}</dt>
+              <dd class="text-sm md:text-base text-ink">{{ person.occupation || t('archive.person.occupation_missing') }}</dd>
             </div>
             <div class="sm:col-span-2">
-              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">Приговор (Мера наказания)</dt>
-              <dd class="text-sm md:text-base text-ink font-bold">{{ person.sentence || 'Сведения о приговоре отсутствуют' }}</dd>
+              <dt class="text-[10px] text-ink-muted mb-1 uppercase tracking-widest">{{ t('archive.person.sentence') }} ({{ t('archive.person.sentence_date_label') }})</dt>
+              <dd class="text-sm md:text-base text-ink font-bold">{{ person.sentence || t('archive.person.sentence_missing') }}</dd>
             </div>
           </div>
         </section>
@@ -147,10 +214,10 @@ useHead({
         <section>
           <div class="flex items-center justify-between mb-6 border-b border-border pb-1">
             <h2 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted font-bold">
-              III. Материалы дела
+              {{ t('archive.person.materials_summary') }}
             </h2>
             <span v-if="person.documents?.length" class="text-[10px] text-ink-muted uppercase tracking-widest">
-              {{ person.documents.length }} документ{{ person.documents.length > 1 ? 'а/ов' : '' }}
+              {{ person.documents.length }} {{ t('archive.person.attached_docs').toLowerCase() }}
             </span>
           </div>
 
@@ -188,7 +255,7 @@ useHead({
 
           <!-- Нет документов -->
           <div v-else class="p-6 border border-dashed border-border text-center">
-            <p class="text-sm text-ink-muted">Документы к этому делу пока не прикреплены.</p>
+            <p class="text-sm text-ink-muted">{{ t('archive.person.no_docs') }}</p>
           </div>
         </section>
       </article>
@@ -203,7 +270,7 @@ useHead({
               @click="isChronologyOpen = !isChronologyOpen"
             >
               <h3 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted font-bold">
-                Хронология дела
+                {{ t('archive.person.chronology') }}
               </h3>
               <svg
                 xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
@@ -219,27 +286,27 @@ useHead({
               <ul class="space-y-5">
                 <li class="relative pl-5 border-l border-border pb-1">
                   <span class="absolute left-[-4px] top-0 w-2 h-2 bg-border rounded-full" />
-                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">Год рождения</p>
+                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">{{ t('archive.person.birth_label') }}</p>
                   <p class="text-sm font-serif font-bold">{{ person.birthYear }}</p>
                 </li>
                 <li class="relative pl-5 border-l border-border pb-1">
                   <span class="absolute left-[-4px] top-0 w-2 h-2 bg-border rounded-full" />
-                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">Дата ареста</p>
+                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">{{ t('archive.person.arrest_label') }}</p>
                   <p class="text-sm font-bold">{{ formatDate(person.arrestDate) }}</p>
                 </li>
                 <li class="relative pl-5 border-l border-border pb-1">
                   <span class="absolute left-[-4px] top-0 w-2 h-2 bg-border rounded-full" />
-                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">Дата приговора</p>
+                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">{{ t('archive.person.sentence_date_label') }}</p>
                   <p class="text-sm font-bold">{{ formatDate(person.sentenceDate) }}</p>
                 </li>
                 <li v-if="person.deathYear" class="relative pl-5 border-l border-border pb-1">
                   <span class="absolute left-[-4px] top-0 w-2 h-2 bg-ink rounded-full" />
-                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">Год смерти</p>
+                  <p class="text-[10px] text-ink-muted uppercase mb-0.5">{{ t('add.death_year') }}</p>
                   <p class="text-sm font-serif font-bold text-ink">{{ person.deathYear }}</p>
                 </li>
                 <li class="relative pl-5 border-l border-ink/30">
                   <span class="absolute left-[-4px] top-0 w-2 h-2 bg-verified rounded-full ring-2 ring-verified-bg" />
-                  <p class="text-[10px] text-verified font-bold uppercase mb-0.5 tracking-widest">Реабилитация</p>
+                  <p class="text-[10px] text-verified font-bold uppercase mb-0.5 tracking-widest">{{ t('archive.person.rehabilitation_label') }}</p>
                   <p class="text-sm md:text-base font-bold text-verified">{{ formatDate(person.rehabilitationDate) }}</p>
                 </li>
               </ul>
@@ -249,17 +316,16 @@ useHead({
           <!-- Контекстный чат (RAG) — ограниченная высота с внутренним скроллом -->
           <ContextChat
             :person-id="person.id"
-            title="Архивный ИИ-поиск"
-            subtitle="Задайте вопрос об этом деле"
+            :title="t('archive.person.ai_search')"
+            :subtitle="t('archive.person.ai_ask')"
             class="h-[350px] md:h-[400px] shadow-sm border border-border"
           />
 
           <!-- Техническая справка -->
           <div class="p-4 md:p-6 border border-border bg-ink text-white/90">
-            <h4 class="text-[10px] font-bold uppercase tracking-widest mb-2">Техническая справка</h4>
+            <h4 class="text-[10px] font-bold uppercase tracking-widest mb-2">{{ t('archive.person.tech_info') }}</h4>
             <p class="text-[10px] md:text-[11px] leading-relaxed opacity-80">
-              Информация из архивных фондов. Проект КТМУ Манас.
-              Если вы нашли ошибку, воспользуйтесь обратной связью.
+              {{ t('archive.person.tech_desc') }}
             </p>
           </div>
         </div>

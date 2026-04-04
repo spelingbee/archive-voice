@@ -4,7 +4,15 @@
  * Корневой layout: Header + Footer + ChatSlideOver, общие для ВСЕХ страниц.
  * Страницы рендерятся через <NuxtPage/> и отвечают только за свой контент.
  */
+const { t } = useI18n()
 const isChatOpen = ref(false)
+
+useHead({
+  title: t('header.title'),
+  meta: [
+    { name: 'description', content: t('footer.copyright', { year: new Date().getFullYear() }) }
+  ]
+})
 </script>
 
 <template>

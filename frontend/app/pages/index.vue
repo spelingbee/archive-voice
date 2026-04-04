@@ -9,6 +9,8 @@ import { refDebounced } from '@vueuse/core'
 import { archiveRepository } from '~/features/archive/api'
 import type { PersonFilters } from '~/features/archive/types'
 
+const { t } = useI18n()
+
 // --- Поиск ---
 const searchQuery = ref('')
 // Дебаунс 400мс: предотвращает излишнюю нагрузку при наборе имени
@@ -61,7 +63,7 @@ function handleFiltersChange(filters: PersonFilters) {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Поиск по имени, региону, статье..."
+            :placeholder="t('common.search_placeholder')"
             class="w-full pl-8 pr-4 py-3 text-lg bg-transparent border-0 border-b-2 border-border focus:border-ink focus:outline-none placeholder:text-ink-muted transition-colors"
           />
           <!-- Индикатор загрузки -->
@@ -79,13 +81,13 @@ function handleFiltersChange(filters: PersonFilters) {
 
     <!-- Состояние загрузки -->
     <div v-if="isLoading && !persons.length" class="py-24 text-center">
-       <p class="text-ink-muted font-serif italic animate-pulse text-lg">Загрузка материалов реестра...</p>
+       <p class="text-ink-muted font-serif italic animate-pulse text-lg">{{ t('common.loading') }}</p>
     </div>
 
     <!-- Список результатов -->
     <section v-else>
       <div v-if="persons.length">
-        <h2 class="sr-only">Архивный реестр (результаты)</h2>
+        <h2 class="sr-only">{{ t('header.title') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
           <PersonCard
             v-for="person in persons"
@@ -102,15 +104,15 @@ function handleFiltersChange(filters: PersonFilters) {
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
            </svg>
         </div>
-        <p class="text-ink font-medium">Ничего не найдено</p>
-        <p class="text-xs text-ink-muted mt-1 uppercase tracking-widest leading-loose">Попробуйте уточнить параметры или сбросить фильтры</p>
+        <p class="text-ink font-medium">{{ t('common.nothing_found') }}</p>
+        <p class="text-xs text-ink-muted mt-1 uppercase tracking-widest leading-loose">{{ t('common.try_adjust_filters') }}</p>
       </div>
     </section>
 
     <!-- Счётчик -->
     <div v-if="persons.length" class="mt-16 text-center text-ink-muted text-sm border-t border-border pt-8">
       <p class="tracking-[.25em] uppercase text-[10px] font-bold">
-        В реестре обнаружено <span class="text-ink underline decoration-dotted underline-offset-4">{{ totalCount }}</span> записей
+        {{ t('common.records_found', { count: totalCount }) }}
       </p>
     </div>
   </div>

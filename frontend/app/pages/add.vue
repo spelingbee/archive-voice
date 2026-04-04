@@ -12,8 +12,10 @@ import type { PersonFormData } from '~/features/archive/types'
 import { REGIONS, ACCUSATIONS } from '~/features/archive/constants'
 import { archiveRepository } from '~/features/archive/api'
 
+const { t } = useI18n()
+
 // --- SEO ---
-useHead({ title: 'Добавить запись — Голос из архива' })
+useHead({ title: `${t('add.title')} — ${t('header.title')}` })
 
 // --- Form state (13 полей) ---
 const form = ref<PersonFormData>({
@@ -89,10 +91,10 @@ async function handleAIParse() {
       fullName: 'Карасаев Кусеин Карасаевич',
       birthYear: '1901',
       deathYear: '1998',
-      region: 'Иссык-Кульская область',
+      region: 'regions.issyk_kul',
       district: 'Тюпский район',
       occupation: 'Лингвист, тюрколог, профессор',
-      accusation: '58-10 (Контрреволюционная агитация)',
+      accusation: 'accusations.agitation',
       arrestDate: '1937-11-10',
       sentence: '10 лет ИТЛ',
       sentenceDate: '1938-02-28',
@@ -101,7 +103,7 @@ async function handleAIParse() {
       source: 'Архив КНБ КР, дело №9982-К',
     }
   } catch (err) {
-    submitError.value = 'Не удалось спарсить документ. Попробуйте заполнить вручную.'
+    submitError.value = t('add.error_parsing')
   } finally {
     isAIParsing.value = false
   }
@@ -158,19 +160,17 @@ async function handleSubmit() {
         to="/"
         class="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink transition-colors mb-6"
       >
-        ← Вернуться к архиву
+        ← {{ t('add.back_to_archive') }}
       </NuxtLink>
 
       <h2
         class="text-2xl md:text-3xl font-semibold text-ink mb-3"
         style="font-family: var(--font-serif)"
       >
-        Внесение данных в архив
+        {{ t('add.title') }}
       </h2>
       <p class="text-ink-muted leading-relaxed max-w-xl text-sm">
-        Заполните анкету для добавления информации. Вы также можете использовать
-        <span class="text-ink font-medium underline underline-offset-4 decoration-ink/20">Smart Import</span>
-        для автоматического распознавания документов.
+        <span v-html="t('add.description', { smart_import: `<span class='text-ink font-medium underline underline-offset-4 decoration-ink/20'>${t('add.smart_import')}</span>` })"></span>
       </p>
     </header>
 
@@ -180,7 +180,7 @@ async function handleSubmit() {
       class="border border-verified bg-verified-bg p-6 text-center mb-8"
     >
       <p class="text-sm text-verified font-medium">
-        ✓ Запись и документы успешно отправлены на модерацию. Перенаправляем...
+        ✓ {{ t('add.success_msg') }}
       </p>
     </div>
 
@@ -196,7 +196,7 @@ async function handleSubmit() {
       <!-- UI: Smart Import Zone -->
       <section>
         <h3 class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-6 font-semibold px-1">
-          Документ (Парсинг / Доказательство)
+          {{ t('add.doc_section') }}
         </h3>
         <div
           class="relative border-2 border-dashed py-12 px-6 text-center transition-all duration-300 group"
@@ -221,15 +221,15 @@ async function handleSubmit() {
                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-ink">Перетащите документ для распознавания</p>
-              <p class="text-xs text-ink-muted mt-1">PDF, JPG, PNG или DOC до 10MB</p>
+              <p class="text-sm font-medium text-ink">{{ t('add.drag_drop') }}</p>
+              <p class="text-xs text-ink-muted mt-1">{{ t('add.file_types') }}</p>
             </div>
             <button
               type="button"
               class="mt-2 text-xs font-bold uppercase tracking-widest text-ink hover:text-accent transition-colors"
               @click="triggerFileInput"
             >
-              Выбрать вручную
+              {{ t('add.choose_manually') }}
             </button>
           </div>
 
@@ -237,7 +237,7 @@ async function handleSubmit() {
             <div class="flex items-center gap-3 bg-white border border-border px-4 py-2 shadow-sm">
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-verified"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                <span class="text-sm font-medium text-ink truncate max-w-[200px]">{{ selectedFile.name }}</span>
-               <button @click="selectedFile = null" class="text-accent underline text-xs font-medium decoration-accent/30 hover:decoration-accent transition-all">Удалить</button>
+               <button @click="selectedFile = null" class="text-accent underline text-xs font-medium decoration-accent/30 hover:decoration-accent transition-all">{{ t('common.delete') }}</button>
             </div>
             
             <button
@@ -245,7 +245,7 @@ async function handleSubmit() {
               class="px-10 py-3 bg-ink text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-ink/90 transition-all shadow-lg shadow-ink/10"
               @click="handleAIParse"
             >
-              Заполнить через ИИ
+              {{ t('add.fill_ai') }}
             </button>
           </div>
         </div>
@@ -256,24 +256,24 @@ async function handleSubmit() {
         <!-- 1. Личные данные -->
         <fieldset>
           <legend class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-8 font-semibold">
-            I. Личные данные
+            {{ t('add.personal_data') }}
           </legend>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
             <div class="md:col-span-2">
-              <label for="fullName" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Фамилия Имя Отчество</label>
+              <label for="fullName" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.full_name') }}</label>
               <input
                 id="fullName"
                 v-model="form.fullName"
                 type="text"
                 required
-                placeholder="Напр. Байтемиров Асан Жумабекович"
+                :placeholder="t('add.full_name') + '...'"
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
               />
             </div>
 
             <div>
-              <label for="birthYear" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Год рождения</label>
+              <label for="birthYear" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.birth_year') }}</label>
               <input
                 id="birthYear"
                 v-model="form.birthYear"
@@ -285,7 +285,7 @@ async function handleSubmit() {
             </div>
 
             <div>
-              <label for="deathYear" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Год смерти</label>
+              <label for="deathYear" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.death_year') }}</label>
               <input
                 id="deathYear"
                 v-model="form.deathYear"
@@ -296,7 +296,7 @@ async function handleSubmit() {
             </div>
 
             <div>
-              <label for="region" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Область</label>
+              <label for="region" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.region') }}</label>
               <select
                 id="region"
                 v-model="form.region"
@@ -304,29 +304,29 @@ async function handleSubmit() {
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink focus:border-ink focus:outline-none transition-colors appearance-none cursor-pointer"
                 style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b7280%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>'); background-repeat: no-repeat; background-position: right 0 center;"
               >
-                <option value="" disabled>Выберите область</option>
-                <option v-for="r in REGIONS" :key="r" :value="r">{{ r }}</option>
+                <option value="" disabled>{{ t('add.select_region') }}</option>
+                <option v-for="r in REGIONS" :key="r" :value="r">{{ t(r) }}</option>
               </select>
             </div>
 
             <div>
-              <label for="district" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Район</label>
+              <label for="district" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.district') }}</label>
               <input
                 id="district"
                 v-model="form.district"
                 type="text"
-                placeholder="Аламединский р-н"
+                :placeholder="t('add.district') + '...'"
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
               />
             </div>
 
             <div class="md:col-span-2">
-              <label for="occupation" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Род занятий (профессия)</label>
+              <label for="occupation" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.occupation') }}</label>
               <input
                 id="occupation"
                 v-model="form.occupation"
                 type="text"
-                placeholder="Учитель, крестьянин, инженер..."
+                :placeholder="t('add.occupation') + '...'"
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
               />
             </div>
@@ -336,24 +336,24 @@ async function handleSubmit() {
         <!-- 2. Сведения о деле -->
         <fieldset>
           <legend class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-8 font-semibold">
-            II. Сведения о деле и приговоре
+            {{ t('add.case_data') }}
           </legend>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
             <div class="md:col-span-2">
-              <label for="source" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Архивный источник / Номер дела</label>
+              <label for="source" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.source') }}</label>
               <input
                 id="source"
                 v-model="form.source"
                 required
                 type="text"
-                placeholder="Напр. Архив ГКНБ, дело №1234"
+                :placeholder="t('add.source') + '...'"
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
               />
             </div>
 
             <div>
-              <label for="accusation" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Статья обвинения</label>
+              <label for="accusation" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.accusation') }}</label>
               <select
                 id="accusation"
                 v-model="form.accusation"
@@ -361,13 +361,13 @@ async function handleSubmit() {
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink focus:border-ink focus:outline-none transition-colors appearance-none cursor-pointer"
                 style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b7280%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>'); background-repeat: no-repeat; background-position: right 0 center;"
               >
-                <option value="" disabled>Выберите статью</option>
-                <option v-for="a in ACCUSATIONS" :key="a" :value="a">{{ a }}</option>
+                <option value="" disabled>{{ t('add.select_accusation') }}</option>
+                <option v-for="a in ACCUSATIONS" :key="a" :value="a">{{ t(a) }}</option>
               </select>
             </div>
 
             <div>
-              <label for="arrestDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Дата ареста</label>
+              <label for="arrestDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.arrest_date') }}</label>
               <input
                 id="arrestDate"
                 v-model="form.arrestDate"
@@ -377,19 +377,19 @@ async function handleSubmit() {
             </div>
 
             <div class="md:col-span-2">
-              <label for="sentence" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Приговор (мера наказания)</label>
+              <label for="sentence" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.sentence') }}</label>
               <input
                 id="sentence"
                 v-model="form.sentence"
                 required
                 type="text"
-                placeholder="Расстрел, 10 лет ИТЛ..."
+                :placeholder="t('add.sentence') + '...'"
                 class="w-full bg-transparent border-0 border-b border-border-hover py-2 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
               />
             </div>
 
             <div>
-              <label for="sentenceDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Дата приговора</label>
+              <label for="sentenceDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.sentence_date') }}</label>
               <input
                 id="sentenceDate"
                 v-model="form.sentenceDate"
@@ -399,7 +399,7 @@ async function handleSubmit() {
             </div>
 
             <div>
-              <label for="rehabilitationDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">Дата реабилитации</label>
+              <label for="rehabilitationDate" class="block text-xs text-ink-muted mb-2 uppercase tracking-wide">{{ t('add.rehabilitation_date') }}</label>
               <input
                 id="rehabilitationDate"
                 v-model="form.rehabilitationDate"
@@ -413,12 +413,12 @@ async function handleSubmit() {
         <!-- 3. Биография -->
         <fieldset>
           <legend class="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-8 font-semibold">
-            III. Обстоятельства и биография
+            {{ t('add.biography_section') }}
           </legend>
           <textarea
             v-model="form.biography"
             rows="6"
-            placeholder="Опишите известные факты о жизни, обстоятельства ареста..."
+            :placeholder="t('add.biography_placeholder')"
             class="w-full bg-transparent border border-border p-4 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors resize-none leading-relaxed"
           ></textarea>
         </fieldset>
@@ -429,7 +429,7 @@ async function handleSubmit() {
              <div class="h-1 bg-paper-dark w-full overflow-hidden mb-2">
                 <div class="h-full bg-ink transition-all duration-300" :style="{ width: `${uploadProgress}%` }"></div>
              </div>
-             <span class="text-[9px] uppercase tracking-widest text-ink-muted">Сохранение записи и файлов...</span>
+             <span class="text-[9px] uppercase tracking-widest text-ink-muted">{{ t('add.saving') }}</span>
           </div>
           
           <button
@@ -437,11 +437,11 @@ async function handleSubmit() {
             :disabled="isSubmitting"
             class="px-16 py-4 bg-ink text-white text-xs font-bold uppercase tracking-[0.2em] hover:bg-ink/90 transition-all shadow-xl shadow-ink/10 disabled:opacity-50"
           >
-            {{ isSubmitting ? 'Выполняется...' : 'Отправить на модерацию' }}
+            {{ isSubmitting ? t('add.submitting') : t('add.submit') }}
           </button>
           
           <p class="text-[10px] text-ink-muted mt-6 uppercase tracking-widest leading-relaxed text-center max-w-xs">
-            Нажимая кнопку, вы подтверждаете достоверность данных.
+            {{ t('add.confirmation') }}
           </p>
         </div>
       </form>
@@ -468,7 +468,7 @@ async function handleSubmit() {
                  </div>
               </div>
               <h3 class="text-white text-xl font-serif italic mb-2 tracking-wide">Smart AI Analysis</h3>
-              <p class="text-[10px] text-white/40 uppercase tracking-[0.4em] animate-pulse">Сканирование архивных материалов...</p>
+              <p class="text-[10px] text-white/40 uppercase tracking-[0.4em] animate-pulse">{{ t('add.ai_scanning') }}</p>
            </div>
         </div>
       </Transition>

@@ -3,12 +3,14 @@
  * pages/dashboard.vue
  * Личный кабинет пользователя.
  */
-import type { ChatSession } from '~/features/chat/types'
+import type { ChatSession, StreamStatus } from '~/features/chat/types'
 import { archiveRepository } from '~/features/archive/api'
 import type { ModerationPerson } from '~/features/archive/types'
 
+const { t } = useI18n()
+
 // --- SEO ---
-useHead({ title: 'Личный кабинет — Голос из архива' })
+useHead({ title: `${t('dashboard.title')} — ${t('header.title')}` })
 
 // --- Auth ---
 const { user, isAuthenticated, isModerator, isAdmin, fullName, logout } = useAuth()
@@ -64,11 +66,11 @@ async function handleApprove() {
   isActionLoading.value = true
   try {
     await archiveRepository.approve(selectedModerationItem.value.id)
-    showNotification('Запись успешно одобрена и опубликована', 'success')
+    showNotification(t('dashboard.approve_success'), 'success')
     await refreshModeration()
     closeModerationDetail()
   } catch (err: any) {
-    showNotification(err.response?._data?.message || 'Ошибка при одобрении', 'error')
+    showNotification(err.response?._data?.message || t('dashboard.approve_error'), 'error')
   } finally {
     isActionLoading.value = false
   }
@@ -79,11 +81,11 @@ async function handleRejectConfirm() {
   isActionLoading.value = true
   try {
     await archiveRepository.reject(selectedModerationItem.value.id, rejectionReason.value)
-    showNotification('Запись была отклонена', 'success')
+    showNotification(t('dashboard.reject_success'), 'success')
     await refreshModeration()
     closeModerationDetail()
   } catch (err: any) {
-    showNotification(err.response?._data?.message || 'Ошибка при отклонении', 'error')
+    showNotification(err.response?._data?.message || t('dashboard.reject_error'), 'error')
   } finally {
     isActionLoading.value = false
   }
@@ -107,25 +109,19 @@ interface NavItem {
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
-    { key: 'my-records', label: 'Мои записи' },
-    { key: 'moderation', label: 'Заявки на модерацию', badge: pendingCount.value, moderatorOnly: true },
-    { key: 'ai-history', label: 'История запросов к ИИ' },
-    { key: 'settings', label: 'Настройки' },
+    { key: 'my-records', label: t('dashboard.my_records') },
+    { key: 'moderation', label: t('dashboard.moderation_requests'), badge: pendingCount.value, moderatorOnly: true },
+    { key: 'ai-history', label: t('dashboard.ai_history') },
+    { key: 'settings', label: t('dashboard.settings') },
   ]
   return items.filter(item => !item.moderatorOnly || isModerator.value)
 })
 
-// --- AI Chat History (Mock) ---
-const chatSessions = ref<ChatSession[]>([
-  { id: 'sess-001', date: '2024-01-15', firstQuestion: 'Какие документы сохранились по делу Байтемирова Асана Жумабековича?', messagesCount: 8 },
-  { id: 'sess-002', date: '2024-01-14', firstQuestion: 'Сколько человек было репрессировано в Чуйской области в 1937 году?', messagesCount: 5 },
-  { id: 'sess-003', date: '2024-01-12', firstQuestion: 'Найди информацию о репрессированных учителях из Ошской области', messagesCount: 12 },
-])
-
 // --- Helpers ---
+const { locale } = useI18n()
 function formatDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('ru-RU', {
+    return new Date(dateStr).toLocaleDateString(locale.value === 'ru' ? 'ru-RU' : locale.value === 'ky' ? 'ky-KG' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -146,6 +142,7 @@ const isDialogOpen = ref(false)
 function openSessionDetail(session: ChatSession) {
   selectedSession.value = session
   isDialogOpen.value = true
+  fetchSessionMessages(session.id)
 }
 
 function closeDialog() {
@@ -154,9 +151,27 @@ function closeDialog() {
 }
 
 const roleLabel = computed(() => {
-  if (isAdmin.value) return 'Админ'
-  if (isModerator.value) return 'Модератор'
+  if (isAdmin.value) return t('common.admin')
+  if (isModerator.value) return t('common.moderator')
   return null
+})
+
+// --- AI Chat History (Real) ---
+const { 
+  sessions: chatSessions, 
+  sessionMessages, 
+  fetchSessions, 
+  fetchSessionMessages, 
+  status: chatStatus 
+} = useChatStream()
+
+const isHistoryLoading = computed(() => chatStatus.value === 'connecting')
+
+// Загружаем историю при переключении на вкладку
+watch(activeTab, (newTab) => {
+  if (newTab === 'ai-history') {
+    fetchSessions()
+  }
 })
 </script>
 
@@ -183,7 +198,7 @@ const roleLabel = computed(() => {
       <!-- Sidebar Navigation -->
       <aside class="lg:w-64 shrink-0">
         <nav class="sticky top-24">
-          <h2 class="text-xs uppercase tracking-wider text-ink-muted mb-4 px-3">Личный кабинет</h2>
+          <h2 class="text-xs uppercase tracking-wider text-ink-muted mb-4 px-3">{{ t('dashboard.title') }}</h2>
           <div v-if="roleLabel" class="px-3 mb-4">
             <span class="text-[10px] uppercase tracking-wide px-2 py-0.5 bg-paper-dark text-ink-muted border border-border">
               {{ roleLabel }}
@@ -204,7 +219,7 @@ const roleLabel = computed(() => {
           <div class="mt-8 pt-6 border-t border-border">
             <NuxtLink to="/" class="flex items-center gap-2 px-3 py-2 text-sm text-ink-muted hover:text-ink transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
-              Вернуться в архив
+              {{ t('dashboard.back_to_archive') }}
             </NuxtLink>
           </div>
         </nav>
@@ -215,8 +230,8 @@ const roleLabel = computed(() => {
         <!-- My Records -->
         <section v-if="activeTab === 'my-records'">
           <header class="mb-6">
-            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">Мои записи</h2>
-            <p class="text-sm text-ink-secondary">Записи, добавленные вами в архив</p>
+            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">{{ t('dashboard.my_records') }}</h2>
+            <p class="text-sm text-ink-secondary">{{ t('dashboard.my_records_desc') }}</p>
           </header>
           
           <div v-if="userRecords.length" class="space-y-4">
@@ -230,7 +245,7 @@ const roleLabel = computed(() => {
                 <div class="flex justify-between items-start mb-3">
                   <div>
                     <h3 class="font-medium text-ink transition-colors group-hover:text-accent">{{ item.fullName }}</h3>
-                    <p class="text-xs text-ink-muted mt-1 uppercase tracking-wider font-mono">{{ item.birthYear }} г.р. • {{ item.region }}</p>
+                    <p class="text-xs text-ink-muted mt-1 uppercase tracking-wider font-mono">{{ item.birthYear }} г.р. • {{ t(item.region) }}</p>
                   </div>
                   <div class="flex flex-col items-end gap-2">
                     <span 
@@ -247,29 +262,29 @@ const roleLabel = computed(() => {
                 </div>
                 
                 <p v-if="item.moderationStatus === 'REJECTED' && item.rejectionReason" class="text-xs text-accent mb-4 p-3 bg-accent/5 border border-accent/20 italic">
-                  <strong>Причина отказа:</strong> {{ item.rejectionReason }}
+                  <strong>{{ t('dashboard.reason_label') }}:</strong> {{ item.rejectionReason }}
                 </p>
                 
-                <p class="text-sm text-ink-secondary mb-4 line-clamp-2 italic">"{{ item.biography || item.charge || 'Описание отсутствует' }}"</p>
+                <p class="text-sm text-ink-secondary mb-4 line-clamp-2 italic">"{{ item.biography || item.charge || t('archive.person.no_biography') }}"</p>
                 
                 <div class="flex items-center justify-between pt-4 border-t border-border">
-                  <div class="text-[10px] text-ink-muted uppercase tracking-wider">Добавлено: {{ formatDate(item.createdAt) }}</div>
-                  <button class="px-4 py-2 text-xs font-medium text-ink border border-border hover:bg-paper-dark transition-colors">Подробнее</button>
+                  <div class="text-[10px] text-ink-muted uppercase tracking-wider">{{ t('common.date_added') }}: {{ formatDate(item.createdAt) }}</div>
+                  <button class="px-4 py-2 text-xs font-medium text-ink border border-border hover:bg-paper-dark transition-colors">{{ t('common.details') }}</button>
                 </div>
               </div>
             </article>
           </div>
           <div v-else class="border border-border bg-white p-12 text-center">
-            <p class="text-ink-muted mb-4">У вас пока нет добавленных записей</p>
-            <NuxtLink to="/add" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-ink hover:bg-ink/90 transition-colors">Добавить первую запись</NuxtLink>
+            <p class="text-ink-muted mb-4">{{ t('dashboard.no_records') }}</p>
+            <NuxtLink to="/add" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-ink hover:bg-ink/90 transition-colors">{{ t('dashboard.add_first_record') }}</NuxtLink>
           </div>
         </section>
 
         <!-- Moderation (Moderators Only) -->
         <section v-if="activeTab === 'moderation' && isModerator">
           <header class="mb-6">
-            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">Заявки на модерацию</h2>
-            <p class="text-sm text-ink-secondary">Записи, ожидающие проверки и подтверждения</p>
+            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">{{ t('dashboard.moderation_requests') }}</h2>
+            <p class="text-sm text-ink-secondary">{{ t('dashboard.moderation_desc') }}</p>
           </header>
 
           <div v-if="moderationList.length" class="space-y-4">
@@ -283,28 +298,28 @@ const roleLabel = computed(() => {
                 <div class="flex justify-between items-start mb-3">
                   <div>
                     <h3 class="font-medium text-ink group-hover:text-ink transition-colors">{{ item.fullName }}</h3>
-                    <p class="text-xs text-ink-muted mt-1 uppercase tracking-wider font-mono">{{ item.birthYear }} г.р. • {{ item.region }}</p>
+                    <p class="text-xs text-ink-muted mt-1 uppercase tracking-wider font-mono">{{ item.birthYear }} г.р. • {{ t(item.region) }}</p>
                   </div>
                   <span class="px-2 py-1 text-[10px] font-semibold bg-paper-dark border border-border text-ink-muted uppercase">{{ item.moderationStatus }}</span>
                 </div>
-                <p class="text-sm text-ink-secondary mb-4 line-clamp-2 italic">"{{ item.biography || item.charge || 'Описание отсутствует' }}"</p>
+                <p class="text-sm text-ink-secondary mb-4 line-clamp-2 italic">"{{ item.biography || item.charge || t('archive.person.no_biography') }}"</p>
                 <div class="flex items-center justify-between pt-4 border-t border-border">
                   <div class="text-[10px] text-ink-muted uppercase tracking-wider">От: {{ item.createdByEmail }}</div>
-                  <button class="px-4 py-2 text-xs font-medium text-ink border border-border hover:bg-paper-dark transition-colors">Подробнее</button>
+                  <button class="px-4 py-2 text-xs font-medium text-ink border border-border hover:bg-paper-dark transition-colors">{{ t('common.details') }}</button>
                 </div>
               </div>
             </article>
           </div>
           <div v-else class="border border-border bg-white p-12 text-center">
-            <p class="text-ink-muted">Нет новых заявок на модерацию</p>
+            <p class="text-ink-muted">{{ t('dashboard.no_moderation') }}</p>
           </div>
         </section>
 
         <!-- AI History -->
         <section v-if="activeTab === 'ai-history'">
           <header class="mb-6">
-            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">История запросов к ИИ</h2>
-            <p class="text-sm text-ink-secondary">Ваши предыдущие диалоги с ассистентом</p>
+            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">{{ t('dashboard.ai_history') }}</h2>
+            <p class="text-sm text-ink-secondary">{{ t('dashboard.ai_history_desc') }}</p>
           </header>
           <div v-if="chatSessions.length" class="border border-border bg-white divide-y divide-border">
             <article v-for="session in chatSessions" :key="session.id" class="p-4 md:p-5 hover:bg-paper-dark transition-colors">
@@ -313,7 +328,7 @@ const roleLabel = computed(() => {
                 <div class="flex-1 min-w-0">
                   <p class="text-sm text-ink leading-snug">{{ truncateText(session.firstQuestion) }}</p>
                 </div>
-                <button class="px-3 py-1.5 text-xs font-medium border border-border hover:border-border-hover" @click="openSessionDetail(session)">Открыть диалог</button>
+                <button class="px-3 py-1.5 text-xs font-medium border border-border hover:border-border-hover" @click="openSessionDetail(session)">{{ t('dashboard.open_dialog') }}</button>
               </div>
             </article>
           </div>
@@ -322,12 +337,12 @@ const roleLabel = computed(() => {
         <!-- Settings -->
         <section v-if="activeTab === 'settings'">
           <header class="mb-6">
-            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">Настройки</h2>
+            <h2 class="text-2xl font-semibold text-ink mb-2" style="font-family: var(--font-serif)">{{ t('dashboard.settings') }}</h2>
           </header>
           <div class="border border-border bg-white divide-y divide-border p-5">
             <p class="text-sm"><strong>Email:</strong> {{ user?.email }}</p>
             <div class="mt-4 flex gap-4">
-              <button class="px-3 py-1.5 text-xs font-medium text-ink-secondary border border-border" @click="logout">Выйти</button>
+              <button class="px-3 py-1.5 text-xs font-medium text-ink-secondary border border-border" @click="logout">{{ t('common.logout') }}</button>
             </div>
           </div>
         </section>
@@ -342,13 +357,26 @@ const roleLabel = computed(() => {
           <div class="absolute inset-0 bg-ink/50" @click="closeDialog" />
           <div v-if="selectedSession" class="relative bg-white border border-border w-full max-w-2xl max-h-[80vh] overflow-auto">
              <header class="sticky top-0 bg-white border-b border-border p-4 flex items-center justify-between">
-                <h3 class="font-semibold">Диалог от {{ formatDate(selectedSession.date) }}</h3>
-                <button @click="closeDialog">Закрыть</button>
+                <h3 class="font-semibold">{{ t('dashboard.dialog_from', { date: formatDate(selectedSession.date) }) }}</h3>
+                <button @click="closeDialog">{{ t('common.close') }}</button>
              </header>
-             <div class="p-5">
-                <blockquote class="border-l-2 border-border pl-4 italic">{{ selectedSession.firstQuestion }}</blockquote>
-                <div class="mt-4 text-center p-8 bg-paper-dark border border-border text-sm text-ink-muted">История сообщений будет загружена здесь...</div>
-             </div>
+              <div class="p-5">
+                 <div v-if="isHistoryLoading" class="text-center p-8 text-sm text-ink-muted">
+                    <svg class="animate-spin h-5 w-5 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    {{ t('common.loading') }}...
+                 </div>
+                 <div v-else class="space-y-6">
+                    <div v-for="msg in sessionMessages" :key="msg.id" class="flex flex-col gap-2">
+                       <div :class="msg.role === 'user' ? 'bg-paper-dark p-3 text-sm italic border-l-2 border-border' : 'p-3 text-sm'">
+                          <div class="text-[10px] uppercase tracking-widest text-ink-muted mb-1">{{ msg.role === 'user' ? t('common.user') : t('common.assistant') }}</div>
+                          <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                          <div v-if="msg.source" class="mt-2 text-[10px] text-accent uppercase font-medium">
+                            {{ t('archive.person.source_label') }}: {{ msg.source }}
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
           </div>
         </div>
       </Transition>
@@ -363,25 +391,25 @@ const roleLabel = computed(() => {
               <div class="flex items-center gap-3">
                 <h3 class="text-lg font-bold">{{ selectedModerationItem.fullName }}</h3>
               </div>
-              <button @click="closeModerationDetail">Закрыть</button>
+              <button @click="closeModerationDetail">{{ t('common.close') }}</button>
             </header>
             
             <div class="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
               <div class="md:col-span-2 space-y-6">
                 <div>
-                  <h4 class="text-xs uppercase font-bold text-ink-muted mb-2">Биография</h4>
-                  <p class="text-sm leading-relaxed">{{ selectedModerationItem.biography || 'Нет описания' }}</p>
+                  <h4 class="text-xs uppercase font-bold text-ink-muted mb-2">{{ t('archive.person.biography_label') }}</h4>
+                  <p class="text-sm leading-relaxed">{{ selectedModerationItem.biography || t('archive.person.no_biography') }}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div><strong>Статья:</strong> {{ selectedModerationItem.charge || selectedModerationItem.accusation }}</div>
-                  <div><strong>Источник:</strong> {{ selectedModerationItem.source }}</div>
-                  <div><strong>Приговор:</strong> {{ selectedModerationItem.sentence }}</div>
-                  <div><strong>Район:</strong> {{ selectedModerationItem.district }}</div>
+                  <div><strong>{{ t('archive.person.accusation_label') }}:</strong> {{ t(selectedModerationItem.charge || selectedModerationItem.accusation) }}</div>
+                  <div><strong>{{ t('archive.person.source_label') }}:</strong> {{ selectedModerationItem.source }}</div>
+                  <div><strong>{{ t('archive.person.sentence') }}:</strong> {{ selectedModerationItem.sentence }}</div>
+                  <div><strong>{{ t('archive.person.district_label') }}:</strong> {{ selectedModerationItem.district }}</div>
                 </div>
 
                 <!-- Attached Documents -->
                 <div v-if="selectedModerationItem.documents?.length" class="mt-8 pt-6 border-t border-border">
-                  <h4 class="text-xs uppercase font-bold text-ink-muted mb-4">Прикрепленные документы ({{ selectedModerationItem.documents.length }})</h4>
+                  <h4 class="text-xs uppercase font-bold text-ink-muted mb-4">{{ t('archive.person.attached_docs') }} ({{ selectedModerationItem.documents.length }})</h4>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div 
                       v-for="doc in selectedModerationItem.documents" 
@@ -398,7 +426,7 @@ const roleLabel = computed(() => {
                       </div>
                       <button 
                         class="p-2 text-ink-muted hover:text-ink transition-colors"
-                        title="Скачать"
+                        :title="t('common.download')"
                         @click="archiveRepository.downloadDocument(doc.id, doc.originalFileName)"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -409,48 +437,48 @@ const roleLabel = computed(() => {
               </div>
               
               <div class="bg-paper-dark p-4 text-sm space-y-3">
-                <div class="flex justify-between"><span>Рождение</span><span>{{ selectedModerationItem.birthYear }}</span></div>
-                <div class="flex justify-between"><span>Арест</span><span>{{ selectedModerationItem.arrestDate || '—' }}</span></div>
-                <div class="flex justify-between"><span>Приговор</span><span>{{ selectedModerationItem.sentenceDate || '—' }}</span></div>
-                <div class="flex justify-between"><span>Реабилитация</span><span class="text-verified font-bold">{{ selectedModerationItem.rehabilitationDate || '—' }}</span></div>
+                <div class="flex justify-between"><span>{{ t('archive.person.birth_label') }}</span><span>{{ selectedModerationItem.birthYear }}</span></div>
+                <div class="flex justify-between"><span>{{ t('archive.person.arrest_label') }}</span><span>{{ selectedModerationItem.arrestDate || '—' }}</span></div>
+                <div class="flex justify-between"><span>{{ t('archive.person.sentence_date_label') }}</span><span>{{ selectedModerationItem.sentenceDate || '—' }}</span></div>
+                <div class="flex justify-between"><span>{{ t('archive.person.rehabilitation_label') }}</span><span class="text-verified font-bold">{{ selectedModerationItem.rehabilitationDate || '—' }}</span></div>
                 <div class="mt-4 pt-4 border-t border-border">
-                   <strong>Автор:</strong> {{ selectedModerationItem.createdByEmail }}
+                   <strong>{{ t('archive.person.author') }}:</strong> {{ selectedModerationItem.createdByEmail }}
                 </div>
               </div>
             </div>
 
             <footer v-if="isModerator && selectedModerationItem.moderationStatus === 'PENDING'" class="bg-paper-dark border-t border-border p-5">
               <div v-if="isRejecting" class="space-y-4">
-                <textarea v-model="rejectionReason" class="w-full p-3 border border-accent/30 text-sm" rows="3" placeholder="Укажите причину..."></textarea>
+                <textarea v-model="rejectionReason" class="w-full p-3 border border-accent/30 text-sm" rows="3" :placeholder="t('dashboard.rejection_reason')"></textarea>
                 <div class="flex justify-end gap-3 text-sm">
-                   <button @click="isRejecting = false">Отмена</button>
+                   <button @click="isRejecting = false">{{ t('common.cancel') }}</button>
                    <button 
                     :disabled="!rejectionReason.trim() || isActionLoading" 
                     class="px-4 py-2 bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 min-w-[180px]" 
                     @click="handleRejectConfirm"
                    >
                     <svg v-if="isActionLoading" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                    <span>{{ isActionLoading ? 'Выполняется...' : 'Подтвердить отклонение' }}</span>
+                    <span>{{ isActionLoading ? t('add.submitting') : t('dashboard.confirm_rejection') }}</span>
                    </button>
                 </div>
               </div>
               <div v-else class="flex justify-between items-center">
-                  <p class="text-[10px] text-ink-muted uppercase">Проверьте данные перед решением</p>
+                  <p class="text-[10px] text-ink-muted uppercase">{{ t('dashboard.check_data') }}</p>
                   <div class="flex gap-4">
-                    <button class="px-6 py-2 border border-border hover:bg-paper-dark transition-colors" @click="isRejecting = true">Отклонить</button>
+                    <button class="px-6 py-2 border border-border hover:bg-paper-dark transition-colors" @click="isRejecting = true">{{ t('dashboard.reject') }}</button>
                     <button 
                       :disabled="isActionLoading" 
                       class="px-8 py-2 bg-ink text-white hover:bg-ink/90 transition-colors flex items-center justify-center gap-2 min-w-[140px]" 
                       @click="handleApprove"
                     >
                       <svg v-if="isActionLoading" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                      <span>{{ isActionLoading ? 'Обработка...' : 'Одобрить' }}</span>
+                      <span>{{ isActionLoading ? t('add.submitting') : t('dashboard.approve') }}</span>
                     </button>
                   </div>
               </div>
             </footer>
             <footer v-else class="bg-paper-dark border-t border-border p-4 text-center">
-              <span class="text-[10px] uppercase font-bold text-ink-muted tracking-widest">Просмотр архивной записи</span>
+              <span class="text-[10px] uppercase font-bold text-ink-muted tracking-widest">{{ t('dashboard.view_record') }}</span>
             </footer>
           </div>
         </div>

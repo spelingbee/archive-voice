@@ -19,6 +19,8 @@ const emit = defineEmits<{
   click: [person: Person]
 }>()
 
+const { t } = useI18n()
+
 // --- Роли из auth (не из useArchivePerson — тот делает API-запрос) ---
 const { isAdmin, isModerator } = useAuth()
 
@@ -35,7 +37,7 @@ const formattedYears = computed(() => {
 
 /** Лейбл статуса */
 const statusLabel = computed(() =>
-  props.person.status === 'verified' ? 'Верифицировано' : 'На проверке',
+  props.person.status === 'verified' ? t('archive.person.verified') : t('archive.person.on_verification'),
 )
 
 /** Краткая биография (обрезается через CSS line-clamp) */
@@ -117,7 +119,7 @@ async function handleVerify() {
 
       <!-- Приговор (если есть) -->
       <div v-if="person.sentence" class="mt-2 pt-2 border-t border-border/50">
-        <p class="text-[10px] uppercase tracking-widest text-ink-muted mb-0.5">Приговор</p>
+        <p class="text-[10px] uppercase tracking-widest text-ink-muted mb-0.5">{{ t('archive.person.sentence') }}</p>
         <p class="text-xs text-ink font-medium">{{ person.sentence }}</p>
       </div>
 
@@ -131,7 +133,7 @@ async function handleVerify() {
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 6 9 17l-5-5" />
         </svg>
-        {{ isVerifying ? 'Верификация...' : 'Верифицировать' }}
+        {{ isVerifying ? t('archive.person.verifying') : t('archive.person.verify') }}
       </button>
     </div>
   </NuxtLink>

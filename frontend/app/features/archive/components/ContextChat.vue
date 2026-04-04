@@ -10,6 +10,8 @@
  */
 import type { ChatMessage } from '~/features/chat/types'
 
+const { t } = useI18n()
+
 const props = defineProps<{
   /** ID персоны для контекстного RAG-поиска */
   personId?: number
@@ -85,13 +87,13 @@ async function handleSubmit() {
         class="text-base font-semibold text-ink"
         style="font-family: var(--font-serif)"
       >
-        {{ title || 'Спросить ИИ' }}
+        {{ title || t('common.ask_ai') }}
       </h3>
       <p v-if="subtitle" class="text-xs text-ink-muted mt-0.5">
         {{ subtitle }}
       </p>
       <p v-if="personId" class="text-[10px] text-ink-muted mt-1" style="font-family: var(--font-mono)">
-        Контекст: дело #{{ personId }}
+        {{ t('common.context') }}: дело #{{ personId }}
       </p>
     </header>
 
@@ -108,13 +110,13 @@ async function handleSubmit() {
               v-if="message.role === 'user'"
               class="text-xs font-bold text-ink uppercase tracking-wide"
             >
-              Исследователь
+              {{ t('chat.user_label') }}
             </h4>
             <h4
               v-else
               class="text-xs font-bold text-ink-secondary uppercase tracking-wide"
             >
-              Система (RAG)
+              {{ t('chat.system_label') }}
             </h4>
           </header>
           <p class="text-sm text-ink leading-relaxed whitespace-pre-wrap">
@@ -125,7 +127,7 @@ async function handleSubmit() {
               class="inline-flex items-center px-1.5 py-0.5 text-[10px] text-ink-muted bg-paper-dark"
               style="font-family: var(--font-mono)"
             >
-              Источник: {{ message.source }}
+              {{ t('chat.source_label') }}: {{ message.source }}
             </span>
           </footer>
         </article>
@@ -134,11 +136,11 @@ async function handleSubmit() {
         <article v-if="isStreaming || isConnecting" class="px-4 py-3">
           <header class="mb-1.5">
             <h4 class="text-xs font-bold text-ink-secondary uppercase tracking-wide">
-              Система (RAG)
+              {{ t('chat.system_label') }}
             </h4>
           </header>
           <p v-if="isConnecting && !currentResponse" class="text-sm text-ink-muted animate-pulse">
-            Поиск по документам дела...
+            {{ t('chat.searching') }}
           </p>
           <p v-else class="text-sm text-ink leading-relaxed whitespace-pre-wrap">
             {{ currentResponse }}<span class="animate-pulse">▍</span>
@@ -152,7 +154,7 @@ async function handleSubmit() {
         class="flex items-center justify-center h-full text-center px-6 py-12"
       >
         <p class="text-sm text-ink-muted">
-          Задайте вопрос о деле — ИИ ответит на основе архивных документов.
+          {{ t('chat.empty_state') }}
         </p>
       </div>
     </div>
@@ -165,12 +167,12 @@ async function handleSubmit() {
     <!-- Input Area -->
     <footer class="border-t border-border p-3">
       <form class="flex gap-2" @submit.prevent="handleSubmit">
-        <label for="context-chat-input" class="sr-only">Введите вопрос</label>
+        <label for="context-chat-input" class="sr-only">{{ t('chat.ask_placeholder') }}</label>
         <input
           id="context-chat-input"
           v-model="inputMessage"
           type="text"
-          placeholder="Задайте вопрос о деле..."
+          :placeholder="t('chat.ask_placeholder')"
           class="flex-1 px-3 py-2 text-sm bg-white border border-border focus:border-ink focus:outline-none transition-colors"
           :disabled="isStreaming"
         />
@@ -178,7 +180,7 @@ async function handleSubmit() {
           v-if="isStreaming"
           type="button"
           class="px-3 py-2 bg-accent text-white text-sm hover:bg-accent-hover transition-colors"
-          aria-label="Остановить"
+          :aria-label="t('common.stop')"
           @click="abort"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -189,7 +191,7 @@ async function handleSubmit() {
           v-else
           type="submit"
           class="px-3 py-2 bg-ink text-white text-sm hover:bg-ink/90 transition-colors"
-          aria-label="Отправить"
+          :aria-label="t('common.send')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14" />

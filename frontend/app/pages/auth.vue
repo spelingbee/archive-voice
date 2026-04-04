@@ -7,8 +7,10 @@
  * При успехе → редирект на / (или на предыдущую страницу).
  */
 
+const { t } = useI18n()
+
 // --- SEO ---
-useHead({ title: 'Вход — Голос из архива' })
+useHead({ title: `${t('auth.login_tab')} — ${t('header.title')}` })
 
 // --- Auth ---
 const { isAuthenticated, login, register } = useAuth()
@@ -57,10 +59,8 @@ async function handleLogin() {
       password: loginForm.value.password,
     })
     // Редирект произойдёт через watch(isAuthenticated)
-  } catch (err: unknown) {
-    errorMessage.value = err instanceof Error
-      ? err.message
-      : 'Неверный email или пароль. Проверьте данные и попробуйте снова.'
+  } catch (err: any) {
+    errorMessage.value = err.response?._data?.message || t('auth.login_error')
   } finally {
     isLoading.value = false
   }
@@ -70,7 +70,7 @@ async function handleRegister() {
   errorMessage.value = null
 
   if (!passwordsMatch.value) {
-    errorMessage.value = 'Пароли не совпадают'
+    errorMessage.value = t('auth.passwords_dont_match')
     return
   }
 
@@ -83,10 +83,8 @@ async function handleRegister() {
       email: registerForm.value.email,
       password: registerForm.value.password,
     })
-  } catch (err: unknown) {
-    errorMessage.value = err instanceof Error
-      ? err.message
-      : 'Ошибка при регистрации. Возможно, этот email уже используется.'
+  } catch (err: any) {
+    errorMessage.value = err.response?._data?.message || t('auth.register_error')
   } finally {
     isLoading.value = false
   }
@@ -108,12 +106,12 @@ function switchTab(tab: AuthTab) {
           class="text-2xl md:text-3xl font-semibold text-ink mb-2"
           style="font-family: var(--font-serif)"
         >
-          {{ activeTab === 'login' ? 'Вход в архив' : 'Регистрация' }}
+          {{ activeTab === 'login' ? t('auth.login_title') : t('auth.register_title') }}
         </h2>
         <p class="text-sm text-ink-muted">
           {{ activeTab === 'login'
-            ? 'Войдите, чтобы добавлять записи и работать с архивом'
-            : 'Создайте аккаунт исследователя'
+            ? t('auth.login_desc')
+            : t('auth.register_desc')
           }}
         </p>
       </div>
@@ -128,7 +126,7 @@ function switchTab(tab: AuthTab) {
           "
           @click="switchTab('login')"
         >
-          Вход
+          {{ t('auth.login_tab') }}
         </button>
         <button
           class="flex-1 pb-3 text-sm font-medium transition-colors border-b-2 -mb-px"
@@ -138,7 +136,7 @@ function switchTab(tab: AuthTab) {
           "
           @click="switchTab('register')"
         >
-          Регистрация
+          {{ t('auth.register_tab') }}
         </button>
       </div>
 
@@ -158,7 +156,7 @@ function switchTab(tab: AuthTab) {
       >
         <div>
           <label for="login-email" class="block text-sm text-ink-secondary mb-2">
-            Email
+            {{ t('auth.email') }}
           </label>
           <input
             id="login-email"
@@ -173,7 +171,7 @@ function switchTab(tab: AuthTab) {
 
         <div>
           <label for="login-password" class="block text-sm text-ink-secondary mb-2">
-            Пароль
+            {{ t('auth.password') }}
           </label>
           <input
             id="login-password"
@@ -191,17 +189,17 @@ function switchTab(tab: AuthTab) {
           :disabled="isLoading"
           class="w-full py-3 bg-ink text-white text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
         >
-          {{ isLoading ? 'Вход...' : 'Войти' }}
+          {{ isLoading ? t('auth.logging_in') : t('auth.login_tab') }}
         </button>
 
         <p class="text-center text-xs text-ink-muted">
-          Нет аккаунта?
+          {{ t('auth.no_account') }}
           <button
             type="button"
             class="text-ink underline underline-offset-2 hover:text-accent transition-colors"
             @click="switchTab('register')"
           >
-            Зарегистрируйтесь
+            {{ t('auth.register_now') }}
           </button>
         </p>
       </form>
@@ -213,38 +211,38 @@ function switchTab(tab: AuthTab) {
         @submit.prevent="handleRegister"
       >
         <div>
-          <label for="reg-name" class="block text-sm text-ink-secondary mb-2">
-            Имя
+          <label for="reg-first-name" class="block text-sm text-ink-secondary mb-2">
+            {{ t('auth.first_name') }}
           </label>
           <input
-            id="reg-name"
+            id="reg-first-name"
             v-model="registerForm.firstName"
             type="text"
             required
-            autocomplete="name"
-            placeholder="Иван"
+            autocomplete="given-name"
+            :placeholder="t('auth.first_name') + '...'"
             class="w-full bg-transparent border-0 border-b border-border-hover py-2.5 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
           />
         </div>
 
         <div>
-          <label for="reg-name" class="block text-sm text-ink-secondary mb-2">
-            Фамилия
+          <label for="reg-last-name" class="block text-sm text-ink-secondary mb-2">
+            {{ t('auth.last_name') }}
           </label>
           <input
-            id="reg-name"
+            id="reg-last-name"
             v-model="registerForm.lastName"
             type="text"
             required
-            autocomplete="name"
-            placeholder="Иванов"
+            autocomplete="family-name"
+            :placeholder="t('auth.last_name') + '...'"
             class="w-full bg-transparent border-0 border-b border-border-hover py-2.5 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
           />
         </div>
 
         <div>
           <label for="reg-email" class="block text-sm text-ink-secondary mb-2">
-            Email
+            {{ t('auth.email') }}
           </label>
           <input
             id="reg-email"
@@ -259,7 +257,7 @@ function switchTab(tab: AuthTab) {
 
         <div>
           <label for="reg-password" class="block text-sm text-ink-secondary mb-2">
-            Пароль
+            {{ t('auth.password') }}
           </label>
           <input
             id="reg-password"
@@ -268,14 +266,14 @@ function switchTab(tab: AuthTab) {
             required
             autocomplete="new-password"
             minlength="8"
-            placeholder="Минимум 8 символов"
+            :placeholder="t('auth.password') + '...'"
             class="w-full bg-transparent border-0 border-b border-border-hover py-2.5 text-ink placeholder:text-ink-muted/50 focus:border-ink focus:outline-none transition-colors"
           />
         </div>
 
         <div>
           <label for="reg-confirm" class="block text-sm text-ink-secondary mb-2">
-            Подтвердите пароль
+            {{ t('auth.confirm_password') }}
           </label>
           <input
             id="reg-confirm"
@@ -283,7 +281,7 @@ function switchTab(tab: AuthTab) {
             type="password"
             required
             autocomplete="new-password"
-            placeholder="Повторите пароль"
+            :placeholder="t('auth.confirm_password') + '...'"
             class="w-full bg-transparent border-0 border-b py-2.5 text-ink placeholder:text-ink-muted/50 focus:outline-none transition-colors"
             :class="registerForm.confirmPassword && !passwordsMatch
               ? 'border-accent'
@@ -294,7 +292,7 @@ function switchTab(tab: AuthTab) {
             v-if="registerForm.confirmPassword && !passwordsMatch"
             class="text-xs text-accent mt-1"
           >
-            Пароли не совпадают
+            {{ t('auth.passwords_dont_match') }}
           </p>
         </div>
 
@@ -303,17 +301,17 @@ function switchTab(tab: AuthTab) {
           :disabled="isLoading || (!!registerForm.confirmPassword && !passwordsMatch)"
           class="w-full py-3 bg-ink text-white text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
         >
-          {{ isLoading ? 'Регистрация...' : 'Создать аккаунт' }}
+          {{ isLoading ? t('auth.registering') : t('auth.create_account') }}
         </button>
 
         <p class="text-center text-xs text-ink-muted">
-          Уже есть аккаунт?
+          {{ t('auth.have_account') }}
           <button
             type="button"
             class="text-ink underline underline-offset-2 hover:text-accent transition-colors"
             @click="switchTab('login')"
           >
-            Войдите
+            {{ t('auth.login_now') }}
           </button>
         </p>
       </form>
@@ -321,7 +319,7 @@ function switchTab(tab: AuthTab) {
       <!-- Decorative quote -->
       <div class="mt-12 pt-8 border-t border-border text-center">
         <blockquote class="text-xs text-ink-muted italic leading-relaxed">
-          «Наш долг — сохранить память о каждом, чьё имя пытались стереть»
+          {{ t('auth.quote') }}
         </blockquote>
       </div>
     </div>

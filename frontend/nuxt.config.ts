@@ -2,16 +2,34 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  modules: ["@nuxt/fonts"],
+  modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
+
+  i18n: {
+    locales: [
+      { code: "ru", name: "Русский", file: "ru.json" },
+      { code: "ky", name: "Кыргызча", file: "ky.json" },
+      { code: "en", name: "English", file: "en.json" },
+    ],
+    langDir: "../i18n/locales/",
+    defaultLocale: "ru",
+    strategy: "no_prefix",
+    detectBrowserLanguage: {
+      useCookie: true,
+      redirectOn: "root",
+    },
+    vueI18n: "./i18n.config.ts"
+  },
   css: ["~/assets/css/main.css"],
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: true
+    }
   },
 
   // --- Runtime Config ---
-  // Переменные доступны через useRuntimeConfig()
-  // Переопределяются через .env: NUXT_PUBLIC_API_BASE=https://api.example.com
   runtimeConfig: {
+    openaiKey: process.env.NUXT_OPENAI_KEY,
     public: {
       apiBase: "https://jolie-causable-chloe.ngrok-free.dev/api",
     },

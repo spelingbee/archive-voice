@@ -11,6 +11,8 @@
 import type { PersonFilters } from '../types'
 import { REGION_OPTIONS, ACCUSATION_OPTIONS, DECADE_OPTIONS } from '../constants'
 
+const { t } = useI18n()
+
 const emit = defineEmits<{
   change: [filters: PersonFilters]
 }>()
@@ -63,7 +65,7 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
   <div class="flex items-center gap-3 md:gap-5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
     <!-- Region Filter -->
     <div class="relative shrink-0">
-      <label for="filter-region" class="sr-only">Фильтр по области</label>
+      <label for="filter-region" class="sr-only">{{ t('archive.filters.region') }}</label>
       <select
         id="filter-region"
         v-model="selectedRegion"
@@ -74,7 +76,7 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
           :key="region.value"
           :value="region.value"
         >
-          {{ region.label }}
+          {{ t(region.label) }}
         </option>
       </select>
       <svg class="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-ink-muted" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -84,7 +86,7 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
 
     <!-- Accusation Type Filter -->
     <div class="relative shrink-0">
-      <label for="filter-accusation" class="sr-only">Фильтр по статье</label>
+      <label for="filter-accusation" class="sr-only">{{ t('archive.filters.accusation') }}</label>
       <select
         id="filter-accusation"
         v-model="selectedAccusationType"
@@ -95,7 +97,7 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
           :key="type.value"
           :value="type.value"
         >
-          {{ type.label }}
+          {{ t(type.label) }}
         </option>
       </select>
       <svg class="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-ink-muted" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -105,13 +107,13 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
 
     <!-- Year Filter -->
     <div class="relative shrink-0 w-16 md:w-20">
-      <label for="filter-year" class="sr-only">Год</label>
+      <label for="filter-year" class="sr-only">{{ t('archive.filters.year') }}</label>
       <input
         id="filter-year"
         v-model="selectedYear"
         type="text"
         inputmode="numeric"
-        placeholder="Год..."
+        :placeholder="t('archive.filters.year') + '...'"
         class="bg-transparent border-0 border-b border-border text-xs md:text-sm text-ink py-1.5 md:py-2 w-full focus:outline-none focus:border-ink transition-colors font-mono placeholder:text-ink-muted"
       />
     </div>
@@ -123,7 +125,7 @@ watch([selectedRegion, selectedDecade, selectedAccusationType, selectedYear], (_
       class="text-xs md:text-sm text-ink-muted hover:text-ink transition-colors shrink-0 whitespace-nowrap"
       @click="resetFilters"
     >
-      Сбросить
+      {{ t('common.reset') }}
     </button>
   </div>
 </template>

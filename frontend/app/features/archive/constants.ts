@@ -8,52 +8,52 @@
 
 /** Области Кыргызстана */
 export const REGIONS = [
-  'Чүйская область',
-  'Ошская область',
-  'Иссык-Кульская область',
-  'Нарынская область',
-  'Джалал-Абадская область',
-  'Таласская область',
-  'Баткенская область',
+  'regions.chuy',
+  'regions.osh',
+  'regions.issyk_kul',
+  'regions.naryn',
+  'regions.jalal_abad',
+  'regions.talas',
+  'regions.batken',
 ] as const
 
 /** Области с value/label — для select-фильтров */
 export const REGION_OPTIONS = [
-  { value: '', label: 'Все области' },
-  { value: 'Чүйская область', label: 'Чүйская область' },
-  { value: 'Ошская область', label: 'Ошская область' },
-  { value: 'Иссык-Кульская область', label: 'Иссык-Кульская область' },
-  { value: 'Нарынская область', label: 'Нарынская область' },
-  { value: 'Таласская область', label: 'Таласская область' },
-  { value: 'Джалал-Абадская область', label: 'Джалал-Абадская область' },
-  { value: 'Баткенская область', label: 'Баткенская область' },
+  { value: '', label: 'archive.filters.all_regions' },
+  { value: 'Чүйская область', label: 'regions.chuy' },
+  { value: 'Ошская область', label: 'regions.osh' },
+  { value: 'Иссык-Кульская область', label: 'regions.issyk_kul' },
+  { value: 'Нарынская область', label: 'regions.naryn' },
+  { value: 'Таласская область', label: 'regions.talas' },
+  { value: 'Джалал-Абадская область', label: 'regions.jalal_abad' },
+  { value: 'Баткенская область', label: 'regions.batken' },
 ] as const
 
 /** Статьи обвинения (УК РСФСР, ст. 58) */
 export const ACCUSATIONS = [
-  'Ст. 58-10 (Антисоветская агитация)',
-  'Ст. 58-11 (Участие в контрреволюционной организации)',
-  'Ст. 58-6 (Шпионаж)',
-  'Ст. 58-7 (Вредительство)',
-  'Ст. 58-8 (Террористические акты)',
-  'Ст. 58-1а (Измена Родине)',
-  'Другое',
+  'accusations.agitation',
+  'accusations.organization',
+  'accusations.espionage',
+  'accusations.sabotage',
+  'accusations.terror',
+  'accusations.treason',
+  'accusations.other',
 ] as const
 
 /** Статьи обвинения с value/label — для select-фильтров */
 export const ACCUSATION_OPTIONS = [
-  { value: '', label: 'Все статьи' },
-  { value: '58-10', label: 'Ст. 58-10 (Агитация)' },
-  { value: '58-11', label: 'Ст. 58-11 (Организация)' },
-  { value: '58-6', label: 'Ст. 58-6 (Шпионаж)' },
-  { value: '58-7', label: 'Ст. 58-7 (Вредительство)' },
-  { value: '58-8', label: 'Ст. 58-8 (Террор)' },
-  { value: 'other', label: 'Другие статьи' },
+  { value: '', label: 'archive.filters.all_accusations' },
+  { value: '58-10', label: 'accusations.agitation' },
+  { value: '58-11', label: 'accusations.organization' },
+  { value: '58-6', label: 'accusations.espionage' },
+  { value: '58-7', label: 'accusations.sabotage' },
+  { value: '58-8', label: 'accusations.terror' },
+  { value: 'other', label: 'accusations.other' },
 ] as const
 
 /** Десятилетия репрессий — для фильтра */
 export const DECADE_OPTIONS = [
-  { value: '', label: 'Все годы' },
+  { value: '', label: 'archive.filters.all_years' },
   { value: '1920s', label: '1920-е' },
   { value: '1930s', label: '1930-е' },
   { value: '1940s', label: '1940-е' },
