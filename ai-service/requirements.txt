@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+easyocr
+torch
+transformers
+PyMuPDF  # for standard PDF to image conversion (import fitz)
+Pillow
+pydantic

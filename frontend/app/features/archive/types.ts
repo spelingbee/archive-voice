@@ -30,6 +30,17 @@ export interface ArchiveDocument {
   fileUrl: string
 }
 
+export interface DuplicateCandidate {
+  duplicatePersonId: number
+  fullName: string
+  birthYear: number | null
+  deathYear: number | null
+  region: string | null
+  occupation: string | null
+  matchScore: number
+  matchMethod: string
+}
+
 /** Основная модель репрессированного */
 export interface Person {
   id: PersonId
@@ -53,6 +64,7 @@ export interface Person {
   createdAt: string
   rejectionReason: string | null
   documents: ArchiveDocument[]
+  duplicates?: DuplicateCandidate[]
 }
 
 /** 

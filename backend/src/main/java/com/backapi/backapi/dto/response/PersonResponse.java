@@ -33,4 +33,5 @@ public class PersonResponse {
     private LocalDateTime createdAt;
     private String rejectionReason;
     private List<DocumentResponse> documents;
+    private List<DuplicateCandidateResponse> duplicates;
 }

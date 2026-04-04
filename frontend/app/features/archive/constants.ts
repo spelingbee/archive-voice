@@ -15,6 +15,8 @@ export const REGIONS = [
   'regions.jalal_abad',
   'regions.talas',
   'regions.batken',
+  'regions.bishkek',
+  'regions.osh_city',
 ] as const
 
 /** Области с value/label — для select-фильтров */
@@ -27,6 +29,8 @@ export const REGION_OPTIONS = [
   { value: 'Таласская область', label: 'regions.talas' },
   { value: 'Джалал-Абадская область', label: 'regions.jalal_abad' },
   { value: 'Баткенская область', label: 'regions.batken' },
+  { value: 'г. Бишкек', label: 'regions.bishkek' },
+  { value: 'г. Ош', label: 'regions.osh_city' },
 ] as const
 
 /** Статьи обвинения (УК РСФСР, ст. 58) */
@@ -37,6 +41,10 @@ export const ACCUSATIONS = [
   'accusations.sabotage',
   'accusations.terror',
   'accusations.treason',
+  'accusations.uprising',
+  'accusations.nedonositelstvo',
+  'accusations.sabotage_counter',
+  'accusations.plunder',
   'accusations.other',
 ] as const
 
@@ -48,6 +56,11 @@ export const ACCUSATION_OPTIONS = [
   { value: '58-6', label: 'accusations.espionage' },
   { value: '58-7', label: 'accusations.sabotage' },
   { value: '58-8', label: 'accusations.terror' },
+  { value: '58-1а', label: 'accusations.treason' },
+  { value: '58-2', label: 'accusations.uprising' },
+  { value: '58-12', label: 'accusations.nedonositelstvo' },
+  { value: '58-14', label: 'accusations.sabotage_counter' },
+  { value: '7-35', label: 'accusations.plunder' },
   { value: 'other', label: 'accusations.other' },
 ] as const
 

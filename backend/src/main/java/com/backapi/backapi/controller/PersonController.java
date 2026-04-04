@@ -88,7 +88,8 @@ public class PersonController {
     public ResponseEntity<ApiResponseWrapper<PaginatedResponse<PersonResponse>>> getPending(
             @RequestParam(defaultValue = "PENDING") PersonStatus status,
             Pageable pageable) {
-        PaginatedResponse<PersonResponse> page = PaginatedResponse.from(personService.getPersonsByStatus(status, pageable));
+        PaginatedResponse<PersonResponse> page = PaginatedResponse.from(
+                personService.getPersonsForModeration(status, pageable));
         return ResponseEntity.ok(ApiResponseWrapper.of(page));
     }
 
@@ -96,7 +97,8 @@ public class PersonController {
     @PreAuthorize("hasRole('MODERATOR')")
     @GetMapping("/moderation/all")
     public ResponseEntity<ApiResponseWrapper<PaginatedResponse<PersonResponse>>> getAllForModeration(Pageable pageable) {
-        PaginatedResponse<PersonResponse> page = PaginatedResponse.from(personService.getAllPersons(pageable));
+        PaginatedResponse<PersonResponse> page = PaginatedResponse.from(
+                personService.getAllPersonsForModeration(pageable));
         return ResponseEntity.ok(ApiResponseWrapper.of(page));
     }
 

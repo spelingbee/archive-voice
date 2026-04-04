@@ -158,5 +158,26 @@ public class PersonSearchService {
         return trigrams;
     }
 
+    // ─── Поиск дублей (все статусы) ──────────────────────────────
+
+    /**
+     * Ищет дубли среди ВСЕХ персон (любой статус модерации).
+     * Возвращает отсортированный список с персонами и скорами.
+     */
+    public List<ScoredPerson> findFuzzyDuplicates(String fullName, Long excludeId) {
+        String target = fullName.toLowerCase().trim();
+        if (target.isEmpty()) return List.of();
+
+        return personRepository.findAll().stream()
+                .filter(person -> !person.getId().equals(excludeId))
+                .map(person -> new ScoredPerson(person,
+                        calculateScore(target, person.getFullName().toLowerCase())))
+                .filter(sp -> sp.score() > RECORD_THRESHOLD)
+                .sorted(Comparator.comparingDouble(ScoredPerson::score).reversed())
+                .toList();
+    }
+
+    public record ScoredPerson(Person person, double score) {}
+
     private record ScoredId(Long id, double score) {}
 }

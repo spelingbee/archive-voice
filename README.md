@@ -61,37 +61,48 @@ git clone https://github.com/<your-org>/archive-voice.git
 cd archive-voice
 ```
 
-#### 2. Фронтенд
+#### 2. Запуск через Docker Compose (Рекомендуется)
 
+Самый быстрый способ развернуть полный стек проекта (PostgreSQL, Backend, Frontend, RAG-service, AI-service):
+
+1. Скопируйте шаблон переменных окружения:
+   ```bash
+   cp .env.example .env
+   ```
+2. Укажите ваши реальные ключи (например, `GEMINI_API_KEY`, `NUXT_OPENAI_KEY`) внутри созданного `.env`.
+3. Запустите оркестрацию контейнеров:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+*При первом запуске база данных будет автоматически заполнена сид-данными.*
+*(Сборка `ai-service` может занять время из-за загрузки библиотек PyTorch).*
+
+После запуска сервисы будут доступны по следующим адресам:
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8080
+- **RAG Service:** http://localhost:8001
+- **AI Service:** http://localhost:8002
+
+#### 3. Локальный запуск (Для разработки)
+
+Если вы хотите разрабатывать компоненты локально без Docker:
+
+**Бэкенд:**
+```bash
+cd backend
+./gradlew bootRun # (Предварительно поднимите БД, например через docker-compose up -d db)
+```
+
+**Фронтенд:**
 ```bash
 cd frontend
-
-# Установить зависимости
+# Убедитесь, что NUXT_PUBLIC_API_BASE=http://localhost:8080/api (указано в .env)
 pnpm install
-
-# Запустить dev-сервер (http://localhost:3000)
 pnpm dev
 ```
 
-#### 3. Бэкенд
-
-```bash
-cd backend
-
-# Запустить Spring Boot (http://localhost:8080)
-./gradlew bootRun
-```
-
-#### 4. Переменные окружения (фронтенд)
-
-Создать файл `frontend/.env`:
-
-```env
-# URL Spring Boot API
-NUXT_PUBLIC_API_BASE=http://localhost:8080/api
-```
-
-### Сборка для production
+### Сборка фронтенда для production
 
 ```bash
 cd frontend

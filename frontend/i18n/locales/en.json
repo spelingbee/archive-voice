@@ -177,7 +177,10 @@
     "approve_success": "Record successfully approved and published",
     "reject_success": "Record has been rejected",
     "approve_error": "Error during approval",
-    "reject_error": "Error during rejection"
+    "reject_error": "Error during rejection",
+    "potential_duplicates": "Potential duplicates",
+    "match": "match",
+    "view_duplicate_record": "View record"
   },
   "chat": {
     "user_label": "Researcher",
@@ -204,7 +207,9 @@
     "naryn": "Naryn Region",
     "jalal_abad": "Jalal-Abad Region",
     "talas": "Talas Region",
-    "batken": "Batken Region"
+    "batken": "Batken Region",
+    "bishkek": "Bishkek City",
+    "osh_city": "Osh City"
   },
   "accusations": {
     "agitation": "Art. 58-10 (Agitation)",
@@ -213,6 +218,10 @@
     "sabotage": "Art. 58-7 (Sabotage)",
     "terror": "Art. 58-8 (Terror)",
     "treason": "Art. 58-1a (Treason)",
+    "uprising": "Art. 58-2 (Armed Uprising)",
+    "nedonositelstvo": "Art. 58-12 (Failure to Report)",
+    "sabotage_counter": "Art. 58-14 (CR Sabotage)",
+    "plunder": "Art. 7-35 (Plunder)",
     "other": "Other"
   }
 }

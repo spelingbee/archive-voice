@@ -13,6 +13,7 @@ import { REGIONS, ACCUSATIONS } from '~/features/archive/constants'
 import { archiveRepository } from '~/features/archive/api'
 
 const { t } = useI18n()
+const config = useRuntimeConfig()
 
 // --- SEO ---
 useHead({ title: `${t('add.title')} — ${t('header.title')}` })
@@ -75,7 +76,7 @@ function triggerFileInput() {
   fileInput.value?.click()
 }
 
-// --- AI Parsing (Mock) ---
+// --- AI Parsing ---
 async function handleAIParse() {
   if (!selectedFile.value) return
   
@@ -83,27 +84,41 @@ async function handleAIParse() {
   submitError.value = null
 
   try {
-    // Имитация работы ИИ (3 секунды)
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
 
-    // Заполнение формы моковыми данными "из документа"
-    form.value = {
-      fullName: 'Карасаев Кусеин Карасаевич',
-      birthYear: '1901',
-      deathYear: '1998',
-      region: 'regions.issyk_kul',
-      district: 'Тюпский район',
-      occupation: 'Лингвист, тюрколог, профессор',
-      accusation: 'accusations.agitation',
-      arrestDate: '1937-11-10',
-      sentence: '10 лет ИТЛ',
-      sentenceDate: '1938-02-28',
-      rehabilitationDate: '1954-06-15',
-      biography: 'Выдающийся киргизский лингвист. Был арестован в 1937 году по ложному обвинению. Прошел лагеря, после чего был полностью реабилитирован и внес неоценимый вклад в науку.',
-      source: 'Архив КНБ КР, дело №9982-К',
+    const token = useCookie('auth_token').value
+
+    const response = await $fetch('/ai/parse', {
+      baseURL: config.public.apiBase,
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      }
+    })
+
+    if (response && response.data) {
+      const data = response.data
+      
+      form.value = {
+        fullName: data.fullName || form.value.fullName,
+        birthYear: data.birthYear || form.value.birthYear,
+        deathYear: data.deathYear || form.value.deathYear,
+        region: data.region || form.value.region,
+        district: data.district || form.value.district,
+        occupation: data.occupation || form.value.occupation,
+        accusation: data.accusation || form.value.accusation,
+        arrestDate: data.arrestDate || form.value.arrestDate,
+        sentence: data.sentence || form.value.sentence,
+        sentenceDate: data.sentenceDate || form.value.sentenceDate,
+        rehabilitationDate: data.rehabilitationDate || form.value.rehabilitationDate,
+        biography: data.biography || form.value.biography,
+        source: data.source || form.value.source,
+      }
     }
-  } catch (err) {
-    submitError.value = t('add.error_parsing')
+  } catch (err: any) {
+    submitError.value = err.data?.message || err.message || t('add.error_parsing')
   } finally {
     isAIParsing.value = false
   }

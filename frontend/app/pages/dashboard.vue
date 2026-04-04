@@ -434,6 +434,36 @@ watch(activeTab, (newTab) => {
                     </div>
                   </div>
                 </div>
+
+                <!-- Potential Duplicates -->
+                <div v-if="selectedModerationItem.duplicates?.length" class="mt-8 pt-6 border-t border-accent/20">
+                  <h4 class="text-xs uppercase font-bold text-accent mb-4">{{ t('dashboard.potential_duplicates') }} ({{ selectedModerationItem.duplicates.length }})</h4>
+                  <div class="space-y-3">
+                    <div 
+                      v-for="dup in selectedModerationItem.duplicates" 
+                      :key="dup.duplicatePersonId"
+                      class="p-4 border border-accent/30 bg-accent/5 flex flex-col gap-2 relative overflow-hidden"
+                    >
+                      <div class="absolute top-0 right-0 p-2 opacity-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.599 11.177a1 1 0 0 1-.802 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>
+                      </div>
+                      <div class="flex justify-between items-start relative z-10">
+                         <span class="text-sm font-bold text-ink">{{ dup.fullName }}</span>
+                         <span class="text-[10px] text-accent uppercase font-bold px-2 py-1 bg-white border border-accent/20">{{ Math.round(dup.matchScore * 100) }}% {{ t('dashboard.match') }} ({{ dup.matchMethod }})</span>
+                      </div>
+                      <div class="text-xs text-ink-secondary relative z-10">
+                        <span v-if="dup.birthYear" class="font-mono">{{ dup.birthYear }} г.р.</span>
+                        <span v-if="dup.region"> • {{ t(dup.region) }}</span>
+                      </div>
+                      <div v-if="dup.occupation" class="text-xs text-ink-muted italic relative z-10">{{ dup.occupation }}</div>
+                      
+                      <NuxtLink :to="`/person/${dup.duplicatePersonId}`" target="_blank" class="text-[10px] text-accent hover:underline font-bold mt-2 inline-flex items-center gap-1">
+                        {{ t('dashboard.view_duplicate_record') }}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </NuxtLink>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div class="bg-paper-dark p-4 text-sm space-y-3">
