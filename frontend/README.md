@@ -1,75 +1,27 @@
-# Nuxt Minimal Starter
+# Frontend — Голос из архива
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+> Nuxt 4 · Vue 3 · TypeScript · Tailwind CSS 4
 
-## Setup
+Подробная документация о проекте, архитектуре и запуске — в [корневом README](../README.md).
 
-Make sure to install dependencies:
+## Быстрый старт
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+pnpm dev          # http://localhost:3000
 ```
 
-## Development Server
+## Скрипты
 
-Start the development server on `http://localhost:3000`:
+| Команда | Описание |
+|---|---|
+| `pnpm dev` | Dev-сервер с HMR |
+| `pnpm build` | Production-сборка |
+| `pnpm preview` | Просмотр production-сборки |
+| `pnpm postinstall` | Генерация типов Nuxt |
 
-```bash
-# npm
-npm run dev
+## Переменные окружения
 
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+```env
+NUXT_PUBLIC_API_BASE=http://localhost:8080/api
 ```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
