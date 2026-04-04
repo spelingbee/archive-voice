@@ -11,7 +11,9 @@
     "nothing_found": "Nothing found",
     "try_adjust_filters": "Try to adjust parameters or reset filters",
     "records_found": "Found {count} records in the registry",
-    "loading": "Loading registry materials...",
+    "loading": "Loading...",
+    "user": "User",
+    "assistant": "Assistant",
     "reset": "Reset",
     "back": "Back",
     "save": "Save",
@@ -187,7 +189,13 @@
     "global_subtitle": "Search and analysis through the entire database",
     "global_placeholder": "Ex: «How many people were repressed in 1937?»",
     "global_empty": "I will help you find information in the archives. Ask any question.",
-    "source_label": "Source"
+    "source_label": "Source",
+    "new_session": "New session",
+    "new_chat": "Start new chat",
+    "view_chat": "Chat",
+    "view_history": "History",
+    "previous_sessions": "Previous sessions",
+    "no_history": "No message history"
   },
   "regions": {
     "chuy": "Chuy Region",
